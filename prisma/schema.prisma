@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model TitikRawan {
+  id          String   @id @default(cuid())
+  nama        String
+  deskripsi   String?
+  tingkatRisiko String
+  koordinat   Unsupported("geometry(Point, 4326)")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  laporanWarga LaporanWarga[]
+
+  @@map("titik_rawan")
+}
+
+model LaporanWarga {
+  id              String   @id @default(cuid())
+  namaPelapor     String
+  nomorTelepon    String?
+  lokasi          String?
+  tingkatKeparahan String
+  deskripsiKejadian String
+  fotoUrl         String?
+  koordinat       Unsupported("geometry(Point, 4326)")?
+  status          String   @default("Menunggu Verifikasi")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  titikRawanId    String?
+  titikRawan      TitikRawan? @relation(fields: [titikRawanId], references: [id], onDelete: SetNull)
+
+  @@index([titikRawanId])
+  @@map("laporan_warga")
+}

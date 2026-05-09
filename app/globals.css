@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('leaflet/dist/leaflet.css');
+@import url('react-leaflet-cluster/dist/assets/MarkerCluster.css');
+@import url('react-leaflet-cluster/dist/assets/MarkerCluster.Default.css');
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  --tw-bg-opacity: 1;
+  background-color: rgb(249 250 251 / var(--tw-bg-opacity));
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+@layer components {
+  .page-shell {
+    @apply w-full p-4 md:p-6 lg:p-8;
+  }
+
+  .page-header {
+    @apply mb-8 space-y-2;
+  }
+
+  .surface-card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
+
+  .info-panel {
+    @apply rounded-xl border p-6;
+  }
+}
