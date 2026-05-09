@@ -34,7 +34,7 @@ export default async function LaporanPage() {
       LIMIT 50
     `;
 
-    reports = rows.map((row) => ({
+    reports = rows.map((row: any) => ({
       id: row.id,
       location: row.lokasi ?? 'Lokasi tidak diketahui',
       date: new Intl.DateTimeFormat('id-ID', {

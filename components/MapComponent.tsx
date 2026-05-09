@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { MapPoint } from '@/app/api/map-points/route';
 
 type LeafletModule = typeof import('leaflet');
@@ -52,11 +52,14 @@ export function MapComponent({ className = '' }: MapComponentProps) {
   const [mapPoints, setMapPoints] = useState<MapPoint[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<SeverityFilter>('Semua');
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [openPopupId, setOpenPopupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const popupRefsMap = useRef<Map<string, any>>(new Map());
   const [leaflet, setLeaflet] = useState<LeafletModule | null>(null);
   const [leafletComponents, setLeafletComponents] = useState<ReactLeafletModule | null>(null);
+  const hasInitializedRef = useRef(false);
 
   const centerLat = -6.9740;
   const centerLng = 107.6303;
@@ -80,6 +83,28 @@ export function MapComponent({ className = '' }: MapComponentProps) {
 
     return () => {
       active = false;
+    };
+  }, []);
+
+  const handleMapRef = useCallback((instance: LeafletMap | null) => {
+    if (instance && !hasInitializedRef.current) {
+      mapInstanceRef.current = instance;
+      hasInitializedRef.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup: unmount map instance to prevent double initialization
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.remove();
+        } catch (err) {
+          // Silently ignore errors during cleanup
+        }
+        mapInstanceRef.current = null;
+      }
+      hasInitializedRef.current = false;
     };
   }, []);
 
@@ -119,6 +144,12 @@ export function MapComponent({ className = '' }: MapComponentProps) {
         const result = await response.json();
         setMapPoints(result.data ?? []);
         setError(null);
+        
+        // Debug: Log pertama data point untuk verify koordinat
+        if (result.data && result.data.length > 0) {
+          console.log('Map points loaded:', result.data.length);
+          console.log('First point:', result.data[0]);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMessage);
@@ -134,6 +165,7 @@ export function MapComponent({ className = '' }: MapComponentProps) {
   useEffect(() => {
     if (!filteredMapPoints.length) {
       setSelectedPointId(null);
+      setOpenPopupId(null);
       return;
     }
 
@@ -145,20 +177,35 @@ export function MapComponent({ className = '' }: MapComponentProps) {
 
     if (!stillVisible) {
       setSelectedPointId(null);
+      setOpenPopupId(null);
     }
   }, [filteredMapPoints, selectedPointId]);
 
   useEffect(() => {
-    if (!mapInstance || !leaflet || filteredMapPoints.length === 0) {
+    if (!mapInstanceRef.current || !leaflet || filteredMapPoints.length === 0) {
       return;
     }
 
     const bounds = leaflet.latLngBounds(filteredMapPoints.map((point) => [point.latitude, point.longitude]));
 
     if (bounds.isValid()) {
-      mapInstance.fitBounds(bounds.pad(0.18), { animate: true });
+      mapInstanceRef.current.fitBounds(bounds.pad(0.18), { animate: true });
     }
-  }, [filteredMapPoints, leaflet, mapInstance]);
+  }, [filteredMapPoints, leaflet]);
+
+  // Trigger popup open saat selectedPointId berubah
+  useEffect(() => {
+    if (openPopupId && popupRefsMap.current.has(openPopupId)) {
+      const popupRef = popupRefsMap.current.get(openPopupId);
+      if (popupRef && popupRef.openPopup) {
+        try {
+          popupRef.openPopup();
+        } catch (err) {
+          console.log('Popup already open or error:', err);
+        }
+      }
+    }
+  }, [openPopupId]);
 
   const createCustomIcon = (severity: string) => {
     if (!leaflet) {
@@ -265,7 +312,7 @@ export function MapComponent({ className = '' }: MapComponentProps) {
         zoom={15}
         className="h-full w-full"
         style={{ minHeight: '500px' }}
-        ref={(instance) => setMapInstance(instance)}
+        ref={handleMapRef}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -288,10 +335,23 @@ export function MapComponent({ className = '' }: MapComponentProps) {
                   position={[point.latitude, point.longitude]}
                   icon={icon}
                   eventHandlers={{
-                    click: () => setSelectedPointId(point.id),
+                    click: () => {
+                      console.log('Marker clicked:', point.id, point.name, `[${point.latitude}, ${point.longitude}]`);
+                      setSelectedPointId(point.id);
+                      setOpenPopupId(point.id);
+                    },
                   }}
                 >
-                  <Popup autoClose={false} closeOnClick={false} keepInView>
+                  <Popup 
+                    ref={(ref) => {
+                      if (ref) {
+                        popupRefsMap.current.set(point.id, ref);
+                      }
+                    }}
+                    autoClose={false} 
+                    closeOnClick={true} 
+                    keepInView
+                  >
                     <div className="w-64">
                       <h3 className="mb-2 font-bold text-gray-900">{point.name}</h3>
                       <p className="mb-3 text-sm text-gray-700">{point.description}</p>
@@ -314,6 +374,9 @@ export function MapComponent({ className = '' }: MapComponentProps) {
 
                       <div className="border-t border-gray-200 pt-2 text-xs text-gray-600">
                         <p>Kejadian terakhir: {point.lastIncident ?? '-'}</p>
+                        <p className="text-[10px] mt-1 text-gray-400">
+                          Koordinat: {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}
+                        </p>
                       </div>
                     </div>
                   </Popup>
@@ -366,10 +429,17 @@ export function MapComponent({ className = '' }: MapComponentProps) {
             <p className="mt-1">{selectedPoint.lastIncident ?? '-'}</p>
           </div>
 
+          <div className="mt-4 text-xs text-gray-500 bg-gray-50 p-2 rounded">
+            <p>📍 {selectedPoint.latitude.toFixed(6)}, {selectedPoint.longitude.toFixed(6)}</p>
+          </div>
+
           <div className="mt-4 flex items-center justify-between gap-3 text-xs text-gray-500">
             <button
               type="button"
-              onClick={() => setSelectedPointId(null)}
+              onClick={() => {
+                setSelectedPointId(null);
+                setOpenPopupId(null);
+              }}
               className="rounded-full border border-gray-200 px-3 py-1.5 font-medium text-gray-700 transition-colors hover:border-primary hover:text-primary"
             >
               Tutup detail

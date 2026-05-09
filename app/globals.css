@@ -1,17 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import url('leaflet/dist/leaflet.css');
 @import url('react-leaflet-cluster/dist/assets/MarkerCluster.css');
 @import url('react-leaflet-cluster/dist/assets/MarkerCluster.Default.css');
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+:root {
+  --brand-900: #041f36;
+  --brand-800: #063153;
+  --brand-700: #0b4f8a;
+  --brand-500: #1ea6ff;
+  --brand-300: #9be7ff;
+  --brand-100: #e6f9ff;
+  --accent-red: #ff4d4f;
 }
 
 html {

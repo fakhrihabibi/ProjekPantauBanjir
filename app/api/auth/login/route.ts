@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { loginSchema } from '@/lib/schemas';
-import { ADMIN_SESSION_COOKIE, createAdminSessionToken } from '@/lib/admin-auth';
 import { findUserByEmail, normalizeEmail, verifyPassword } from '@/lib/auth';
+import { AUTH_SESSION_COOKIE, createSessionToken } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -33,11 +33,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user.role !== 'ADMIN') {
+    if (user.role !== 'USER') {
       return NextResponse.json(
         {
           success: false,
-          error: 'Akun ini bukan akun admin.',
+          error: 'Akun admin harus login melalui halaman admin.',
         },
         { status: 403 }
       );
@@ -55,10 +55,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const token = await createAdminSessionToken(user);
+    const token = await createSessionToken({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: 'USER',
+    });
     const response = NextResponse.json({ success: true });
 
-    response.cookies.set(ADMIN_SESSION_COOKIE, token, {
+    response.cookies.set(AUTH_SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
@@ -68,12 +73,12 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
-    console.error('Admin login failed:', error);
+    console.error('User login failed:', error);
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Terjadi kesalahan saat login admin.',
+        error: 'Terjadi kesalahan saat login.',
       },
       { status: 500 }
     );

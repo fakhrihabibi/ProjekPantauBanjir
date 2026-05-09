@@ -14,6 +14,7 @@ export function WaterLevelGauge({
   dangerLevel = 90,
 }: WaterLevelGaugeProps) {
   const [displayLevel, setDisplayLevel] = useState(0);
+  const [lastReadingTime, setLastReadingTime] = useState<string | null>(null);
 
   useEffect(() => {
     // Animate the gauge fill
@@ -28,6 +29,10 @@ export function WaterLevelGauge({
 
     return () => clearInterval(interval);
   }, [currentLevel]);
+
+  useEffect(() => {
+    setLastReadingTime(new Date().toLocaleTimeString('id-ID'));
+  }, []);
 
   const getStatusColor = (level: number) => {
     if (level <= warningLevel - 20) return 'text-green-600';
@@ -201,7 +206,7 @@ export function WaterLevelGauge({
           <div>
             <p className="text-xs text-gray-600">Pembacaan Terakhir</p>
             <p className="text-sm font-semibold text-gray-900">
-              {new Date().toLocaleTimeString('id-ID')}
+              {lastReadingTime ?? '--:--:--'}
             </p>
           </div>
           <div>

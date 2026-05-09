@@ -1,17 +1,8 @@
-import nextDynamic from 'next/dynamic';
+import { MapWrapper } from '@/components/MapWrapper';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const MapComponent = nextDynamic(() => import('@/components/MapComponent').then(mod => mod.MapComponent), {
-  ssr: false,
-  loading: () => (
-    <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-      <p className="text-gray-500">Memuat peta...</p>
-    </div>
-  ),
-});
 
 type SeverityCount = {
   tingkatRisiko: string;
@@ -155,7 +146,7 @@ export default async function PetaPage() {
       {/* Map */}
       <div className="surface-card overflow-hidden mb-8">
         <div className="relative h-[420px] md:h-[520px]">
-          <MapComponent />
+          <MapWrapper stats={stats} severityBreakdown={severityBreakdown} />
         </div>
       </div>
 

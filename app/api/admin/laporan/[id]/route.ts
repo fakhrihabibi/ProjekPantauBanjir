@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '@/lib/admin-auth';
+import { AUTH_SESSION_COOKIE, verifySessionToken } from '@/lib/session';
+import { HOTSPOT_MATCH_RADIUS_METERS } from '@/lib/map-config';
 
 export const runtime = 'nodejs';
 
@@ -15,9 +16,9 @@ const updateLaporanSchema = z
   });
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 const mapLaporanResponse = (row: {
@@ -51,11 +52,120 @@ const mapLaporanResponse = (row: {
   };
 };
 
+type ReportLinkingRow = {
+  latitude: number | null;
+  longitude: number | null;
+  lokasi: string | null;
+  deskripsiKejadian: string;
+  tingkatKeparahan: string;
+};
+
+async function ensureHotspotLinkForVerifiedReport(reportId: string, adminUserId: string) {
+  const reportRows = await prisma.$queryRaw<ReportLinkingRow[]>`
+    SELECT
+      ST_Y(lw.koordinat::geometry) AS latitude,
+      ST_X(lw.koordinat::geometry) AS longitude,
+      lw.lokasi,
+      lw."deskripsiKejadian",
+      lw."tingkatKeparahan"
+    FROM "laporan_warga" lw
+    WHERE lw.id = ${reportId}
+      AND lw.koordinat IS NOT NULL
+      AND lw."titikRawanId" IS NULL
+    LIMIT 1
+  `;
+
+  const report = reportRows[0];
+
+  if (!report || report.latitude === null || report.longitude === null) {
+    return;
+  }
+
+  const nearestRows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT tr.id
+    FROM "titik_rawan" tr
+    WHERE ST_DWithin(
+      tr.koordinat::geography,
+      ST_SetSRID(ST_Point(${report.longitude}, ${report.latitude}), 4326)::geography,
+      ${HOTSPOT_MATCH_RADIUS_METERS}
+    )
+    ORDER BY ST_Distance(
+      tr.koordinat::geography,
+      ST_SetSRID(ST_Point(${report.longitude}, ${report.latitude}), 4326)::geography
+    ) ASC
+    LIMIT 1
+  `;
+
+  const nearest = nearestRows[0];
+
+  if (nearest) {
+    await prisma.$executeRaw`
+      UPDATE "laporan_warga"
+      SET "titikRawanId" = ${nearest.id},
+          "verifiedAt" = COALESCE("verifiedAt", NOW()),
+          "verifiedById" = COALESCE("verifiedById", ${adminUserId}),
+          "updatedAt" = NOW()
+      WHERE id = ${reportId}
+    `;
+    return;
+  }
+
+  const normalizedSeverity = report.tingkatKeparahan.toLowerCase().includes('parah')
+    ? 'Tinggi'
+    : report.tingkatKeparahan.toLowerCase().includes('sedang')
+      ? 'Sedang'
+      : 'Rendah';
+
+  const hotspotRows = await prisma.$queryRaw<{ id: string }[]>`
+    INSERT INTO "titik_rawan" (
+      id,
+      nama,
+      deskripsi,
+      "tingkatRisiko",
+      "radiusMeter",
+      koordinat,
+      "verifiedAt",
+      "verifiedById",
+      "createdAt",
+      "updatedAt"
+    ) VALUES (
+      ${`tr_${reportId}`},
+      ${report.lokasi ?? 'Titik Rawan Baru'},
+      ${report.deskripsiKejadian},
+      ${normalizedSeverity},
+      ${HOTSPOT_MATCH_RADIUS_METERS},
+      ST_SetSRID(ST_Point(${report.longitude}, ${report.latitude}), 4326),
+      NOW(),
+      ${adminUserId},
+      NOW(),
+      NOW()
+    )
+    RETURNING id
+  `;
+
+  const hotspot = hotspotRows[0];
+
+  if (!hotspot) {
+    return;
+  }
+
+  await prisma.$executeRaw`
+    UPDATE "laporan_warga"
+    SET "titikRawanId" = ${hotspot.id},
+        "verifiedAt" = COALESCE("verifiedAt", NOW()),
+        "verifiedById" = COALESCE("verifiedById", ${adminUserId}),
+        "updatedAt" = NOW()
+    WHERE id = ${reportId}
+  `;
+}
+
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
-    const sessionToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    const { id } = await context.params;
+    const sessionToken = request.cookies.get(AUTH_SESSION_COOKIE)?.value;
+    const session = sessionToken ? await verifySessionToken(sessionToken) : null;
 
-    if (!sessionToken || !(await verifyAdminSessionToken(sessionToken))) {
+    if (!session || session.role !== 'ADMIN') {
       return NextResponse.json(
         {
           success: false,
@@ -91,7 +201,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       updateData.tingkatKeparahan = parsed.data.rating;
     }
 
-    const reportId = context.params.id;
+    const reportId = id;
 
     // Use raw SQL because LaporanWarga has Unsupported PostGIS field
     // that causes Prisma ORM methods to fail
@@ -117,6 +227,18 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
             "updatedAt" = NOW()
         WHERE id = ${reportId}
       `;
+    }
+
+    if (updateData.status === 'Terverifikasi') {
+      await prisma.$executeRaw`
+        UPDATE "laporan_warga"
+        SET "verifiedAt" = COALESCE("verifiedAt", NOW()),
+            "verifiedById" = COALESCE("verifiedById", ${session.userId}),
+            "updatedAt" = NOW()
+        WHERE id = ${reportId}
+      `;
+
+      await ensureHotspotLinkForVerifiedReport(reportId, session.userId);
     }
 
     // Fetch updated row with raw SQL to avoid Unsupported field in SELECT
@@ -181,9 +303,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const sessionToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    const { id } = await context.params;
+    const sessionToken = request.cookies.get(AUTH_SESSION_COOKIE)?.value;
+    const session = sessionToken ? await verifySessionToken(sessionToken) : null;
 
-    if (!sessionToken || !(await verifyAdminSessionToken(sessionToken))) {
+    if (!session || session.role !== 'ADMIN') {
       return NextResponse.json(
         {
           success: false,
@@ -193,7 +317,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const reportId = context.params.id;
+    const reportId = id;
 
     // Use raw SQL because of Unsupported PostGIS field
     const deletedRows = await prisma.$queryRaw<{ id: string }[]>`

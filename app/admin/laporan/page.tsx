@@ -1,7 +1,6 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { verifyAdminSessionToken, ADMIN_SESSION_COOKIE } from '@/lib/admin-auth';
+import { getCurrentSession } from '@/lib/auth';
 import { AdminLaporanManager, type AdminReportItem } from './AdminLaporanManager';
 
 const normalizeRating = (value: string): AdminReportItem['rating'] => {
@@ -19,10 +18,9 @@ const normalizeRating = (value: string): AdminReportItem['rating'] => {
 };
 
 export default async function AdminLaporanPage() {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
+  const session = await getCurrentSession();
 
-  if (!sessionToken || !(await verifyAdminSessionToken(sessionToken))) {
+  if (!session || session.role !== 'ADMIN') {
     redirect('/admin/login?next=/admin/laporan');
   }
 
@@ -44,7 +42,7 @@ export default async function AdminLaporanPage() {
       take: 100,
     });
 
-    reports = rows.map((row) => ({
+    reports = rows.map((row: any) => ({
       id: row.id,
       lokasi: row.titikRawan?.nama ?? 'Belum ditautkan ke titik rawan',
       pelapor: row.namaPelapor,

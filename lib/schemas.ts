@@ -37,8 +37,26 @@ export const reportFormSchema = z.object({
     .url('URL foto tidak valid')
     .optional()
     .or(z.literal('')),
+  coordinateSource: z
+    .enum(['manual_pin', 'geocoded_hint', 'admin_adjusted'])
+    .optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
 });
 
 export type ReportFormData = z.infer<typeof reportFormSchema>;
+
+export const loginSchema = z.object({
+  email: z.string().email('Email tidak valid'),
+  password: z.string().min(8, 'Password minimal 8 karakter'),
+});
+
+export const registerSchema = loginSchema
+  .extend({
+    name: z.string().trim().min(3, 'Nama minimal 3 karakter').max(100, 'Nama terlalu panjang'),
+    confirmPassword: z.string().min(8, 'Konfirmasi password minimal 8 karakter'),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: 'Konfirmasi password tidak cocok',
+    path: ['confirmPassword'],
+  });

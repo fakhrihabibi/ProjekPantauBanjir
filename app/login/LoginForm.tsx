@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-type AdminLoginFormProps = {
+type LoginFormProps = {
   nextPath: string;
 };
 
-export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
+export function LoginForm({ nextPath }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,14 +21,13 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
-
       const result = await response.json();
 
       if (!response.ok || !result.success) {
@@ -48,39 +47,19 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
   return (
     <div className="relative min-h-[calc(100vh-2rem)] overflow-hidden px-4 py-8 md:px-8 md:py-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(6,182,212,0.14),_transparent_28%)]" />
-      <div className="pointer-events-none absolute left-8 top-10 h-44 w-44 rounded-full bg-sky-300/20 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-8 right-8 h-56 w-56 rounded-full bg-cyan-300/20 blur-3xl" />
-
       <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center">
         <div className="grid w-full overflow-hidden rounded-[2rem] bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/80 backdrop-blur lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="flex items-center bg-gradient-to-br from-sky-600 via-sky-500 to-cyan-500 p-8 text-white md:p-12 lg:p-14">
-            <div className="max-w-md space-y-6">
+          <section className="flex items-center bg-gradient-to-br from-slate-900 via-sky-800 to-cyan-700 p-8 text-white md:p-12 lg:p-14">
+            <div className="max-w-md space-y-5">
               <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/85">
-                Admin Access
+                User Access
               </div>
-              <div className="space-y-3">
-                <h1 className="text-3xl font-bold leading-tight md:text-4xl lg:text-[2.75rem]">
-                  Masuk ke dashboard admin PantauBanjir
-                </h1>
-                <p className="max-w-[34rem] text-sm leading-7 text-white/90 md:text-base">
-                  Area ini dipakai untuk verifikasi laporan, pengelolaan data titik rawan, dan pembaruan informasi operasional.
-                </p>
-              </div>
-
-              <div className="grid gap-3 text-sm text-white/90 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm">
-                  Verifikasi laporan warga
-                </div>
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm">
-                  Kelola titik rawan
-                </div>
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm">
-                  Update data peta
-                </div>
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-sm">
-                  Akses khusus admin
-                </div>
-              </div>
+              <h1 className="text-3xl font-bold leading-tight md:text-4xl lg:text-[2.75rem]">
+                Masuk untuk melacak laporan dan aktivitas akun
+              </h1>
+              <p className="text-sm leading-7 text-white/90 md:text-base">
+                Akun pengguna memudahkan pelacakan laporan banjir, akses riwayat kiriman, dan penggunaan fitur publik yang personal.
+              </p>
             </div>
           </section>
 
@@ -88,11 +67,11 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
             <form onSubmit={handleSubmit} className="w-full space-y-5">
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">
-                  Secure Login
+                  Welcome Back
                 </p>
-                <h2 className="text-2xl font-bold text-slate-900 md:text-[1.75rem]">Login Admin</h2>
+                <h2 className="text-2xl font-bold text-slate-900 md:text-[1.75rem]">Login Pengguna</h2>
                 <p className="text-sm leading-6 text-slate-600">
-                  Gunakan akun admin yang telah diprovisikan di database.
+                  Gunakan email dan password akun Anda.
                 </p>
               </div>
 
@@ -103,7 +82,7 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                  placeholder="admin@email.com"
+                  placeholder="nama@email.com"
                   autoComplete="email"
                 />
               </label>
@@ -115,7 +94,7 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-                  placeholder="Masukkan password admin"
+                  placeholder="Masukkan password"
                   autoComplete="current-password"
                 />
               </label>
@@ -126,7 +105,7 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  Login ini hanya untuk akun admin yang sudah terdaftar.
+                  Belum punya akun? Daftar terlebih dahulu.
                 </div>
               )}
 
@@ -135,14 +114,16 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
                 disabled={loading}
                 className="w-full rounded-2xl bg-sky-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-sky-500/25 transition hover:-translate-y-0.5 hover:bg-sky-700 hover:shadow-sky-500/35 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {loading ? 'Memproses...' : 'Masuk ke Dashboard'}
+                {loading ? 'Memproses...' : 'Masuk'}
               </button>
 
               <div className="flex items-center justify-between text-sm text-slate-500">
-                <Link href="/" className="transition hover:text-sky-700">
-                  Kembali ke beranda
+                <Link href="/register" className="transition hover:text-sky-700">
+                  Buat akun
                 </Link>
-                <span>Hanya untuk admin</span>
+                <Link href="/admin/login" className="transition hover:text-sky-700">
+                  Login admin
+                </Link>
               </div>
             </form>
           </section>

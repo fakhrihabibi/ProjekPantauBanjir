@@ -8,17 +8,27 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum UserRole {
+  ADMIN
+  USER
+}
+
 model TitikRawan {
   id          String   @id @default(cuid())
   nama        String
   deskripsi   String?
   tingkatRisiko String
+  radiusMeter Int      @default(75)
   koordinat   Unsupported("geometry(Point, 4326)")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  verifiedAt  DateTime?
+  verifiedById String?
 
   laporanWarga LaporanWarga[]
+  verifiedBy   User?          @relation("VerifiedTitikRawan", fields: [verifiedById], references: [id], onDelete: SetNull)
 
+  @@index([verifiedById])
   @@map("titik_rawan")
 }
 
@@ -31,13 +41,36 @@ model LaporanWarga {
   deskripsiKejadian String
   fotoUrl         String?
   koordinat       Unsupported("geometry(Point, 4326)")?
+  coordinateSource String?
   status          String   @default("Menunggu Verifikasi")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  verifiedAt      DateTime?
+  verifiedById    String?
 
   titikRawanId    String?
   titikRawan      TitikRawan? @relation(fields: [titikRawanId], references: [id], onDelete: SetNull)
+  userId          String?
+  user            User?       @relation("UserReports", fields: [userId], references: [id], onDelete: SetNull)
+  verifiedBy      User?       @relation("VerifiedReports", fields: [verifiedById], references: [id], onDelete: SetNull)
 
   @@index([titikRawanId])
+  @@index([userId])
+  @@index([verifiedById])
   @@map("laporan_warga")
+}
+
+model User {
+  id               String         @id @default(cuid())
+  name             String
+  email            String         @unique
+  passwordHash     String
+  role             UserRole       @default(USER)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  laporanWarga     LaporanWarga[] @relation("UserReports")
+  verifiedReports  LaporanWarga[] @relation("VerifiedReports")
+  verifiedHotspots TitikRawan[]   @relation("VerifiedTitikRawan")
+
+  @@map("users")
 }

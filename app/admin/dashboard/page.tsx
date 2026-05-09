@@ -1,13 +1,11 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { verifyAdminSessionToken, ADMIN_SESSION_COOKIE } from '@/lib/admin-auth';
+import { getCurrentSession } from '@/lib/auth';
 
 export default async function AdminDashboardPage() {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
+  const session = await getCurrentSession();
 
-  if (!sessionToken || !(await verifyAdminSessionToken(sessionToken))) {
+  if (!session || session.role !== 'ADMIN') {
     redirect('/admin/login?next=/admin/dashboard');
   }
 
@@ -42,7 +40,7 @@ export default async function AdminDashboardPage() {
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
           Area ini khusus untuk admin yang memverifikasi laporan, mengelola data, dan menjaga kualitas informasi yang dilihat publik.
         </p>
-        <form action="/api/admin/logout" method="post" className="mt-6">
+        <form action="/api/auth/logout" method="post" className="mt-6">
           <button
             type="submit"
             className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-500 hover:text-sky-700"

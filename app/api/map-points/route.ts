@@ -75,64 +75,11 @@ export async function GET() {
       FROM "titik_rawan" tr
       LEFT JOIN "laporan_warga" lw
         ON lw."titikRawanId" = tr.id
+       AND lw.status = 'Terverifikasi'
       WHERE tr.koordinat IS NOT NULL
       GROUP BY tr.id, tr.nama, tr.deskripsi, tr."tingkatRisiko", tr.koordinat
       ORDER BY tr."createdAt" DESC
     `;
-
-    // Also include verified laporan_warga that have their own koordinat
-    type RawLaporanRow = {
-      id: string;
-      lokasi: string;
-      deskripsiKejadian: string;
-      tingkatKeparahan: string;
-      latitude: number;
-      longitude: number;
-      createdAt: Date;
-    };
-
-    const laporanRows: RawLaporanRow[] = await prisma.$queryRaw<RawLaporanRow[]>`
-      SELECT
-        lw.id,
-        lw.lokasi,
-        lw."deskripsiKejadian",
-        lw."tingkatKeparahan",
-        ST_Y(lw.koordinat::geometry) AS latitude,
-        ST_X(lw.koordinat::geometry) AS longitude,
-        lw."createdAt"
-      FROM "laporan_warga" lw
-      WHERE lw.koordinat IS NOT NULL
-        AND lw.status = 'Terverifikasi'
-        AND lw."titikRawanId" IS NULL
-    `;
-
-    const severityMap: Record<string, 'Tinggi' | 'Sedang' | 'Rendah'> = {
-      Parah: 'Tinggi',
-      Sedang: 'Sedang',
-      Rendah: 'Rendah',
-    };
-
-    const laporanPoints: MapPoint[] = laporanRows
-      .map((row) => {
-        const latitude = toFiniteNumber(row.latitude);
-        const longitude = toFiniteNumber(row.longitude);
-
-        if (latitude === null || longitude === null) {
-          return null;
-        }
-
-        return {
-          id: `laporan-${row.id}`,
-          name: row.lokasi,
-          latitude,
-          longitude,
-          severity: severityMap[row.tingkatKeparahan] ?? 'Sedang',
-          description: row.deskripsiKejadian,
-          incidents: 1,
-          lastIncident: toIsoDateOrNull(row.createdAt),
-        } satisfies MapPoint;
-      })
-      .filter((point): point is MapPoint => point !== null);
 
     const data: MapPoint[] = [
       ...rows
@@ -156,7 +103,6 @@ export async function GET() {
           } satisfies MapPoint;
         })
         .filter((point): point is MapPoint => point !== null),
-      ...laporanPoints,
     ];
 
     return NextResponse.json({

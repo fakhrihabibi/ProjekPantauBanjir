@@ -20,6 +20,7 @@ export function ReportForm() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [markerPos, setMarkerPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchResultPos, setSearchResultPos] = useState<{ lat: number; lng: number } | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -40,14 +41,22 @@ export function ReportForm() {
       lokasi: '',
       deskripsi: '',
       tingkatKeparahan: undefined,
-      tanggalWaktu: getLocalDateTimeValue(),
+      tanggalWaktu: '',
       fotoDeskripsi: '',
+      coordinateSource: undefined,
       latitude: undefined,
       longitude: undefined,
     },
   });
 
   const tingkatKeparahan = watch('tingkatKeparahan');
+
+  useEffect(() => {
+    setValue('tanggalWaktu', getLocalDateTimeValue(), {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+  }, [setValue]);
 
   // Initialize Leaflet map for location picking
   useEffect(() => {
@@ -95,6 +104,8 @@ export function ReportForm() {
         marker.bindPopup('Lokasi laporan').openPopup();
         markerRef.current = marker;
         setMarkerPos({ lat, lng });
+        setSearchResultPos(null);
+        setValue('coordinateSource', 'manual_pin');
         setValue('latitude', lat);
         setValue('longitude', lng);
       });
@@ -133,9 +144,8 @@ export function ReportForm() {
         const newLat = parseFloat(lat);
         const newLng = parseFloat(lon);
 
-        setMarkerPos({ lat: newLat, lng: newLng });
-        setValue('latitude', newLat);
-        setValue('longitude', newLng);
+        setSearchResultPos({ lat: newLat, lng: newLng });
+        setValue('coordinateSource', 'geocoded_hint');
         setShowMap(true);
 
         // Move map if already initialized
@@ -148,11 +158,11 @@ export function ReportForm() {
           }
           
           const newMarker = L.marker([newLat, newLng]).addTo(mapRef.current);
-          newMarker.bindPopup('Lokasi ditemukan').openPopup();
+          newMarker.bindPopup('Hasil geocoding, klik peta untuk konfirmasi').openPopup();
           markerRef.current = newMarker;
         }
         
-        toast.success('Lokasi ditemukan!');
+        toast.success('Lokasi ditemukan. Klik peta untuk mengonfirmasi titik final.');
       } else {
         toast.error('Alamat tidak ditemukan di peta');
       }
@@ -272,7 +282,7 @@ export function ReportForm() {
           type="text"
           placeholder="Masukkan nama lengkap Anda"
           {...register('namaPelapor')}
-          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition ${
+          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
             errors.namaPelapor
               ? 'border-red-500 bg-red-50'
               : 'border-gray-300 bg-white'
@@ -297,7 +307,7 @@ export function ReportForm() {
             type="tel"
             placeholder="08xx-xxxx-xxxx"
             {...register('nomorTelepon')}
-            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition ${
+            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
               errors.nomorTelepon
                 ? 'border-red-500 bg-red-50'
                 : 'border-gray-300 bg-white'
@@ -319,7 +329,7 @@ export function ReportForm() {
           <input
             type="datetime-local"
             {...register('tanggalWaktu')}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition bg-white"
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition bg-white"
           />
         </div>
       </div>
@@ -334,7 +344,7 @@ export function ReportForm() {
             type="text"
             placeholder="Contoh: Jl. Raya Bojongsoang, dekat Simpang Tiga"
             {...register('lokasi')}
-            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition ${
+            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
               errors.lokasi
                 ? 'border-red-500 bg-red-50'
                 : 'border-gray-300 bg-white'
@@ -344,7 +354,7 @@ export function ReportForm() {
             type="button"
             onClick={cariLokasi}
             disabled={isGeocoding}
-            className="px-4 py-2 bg-blue-50 text-blue-600 border-2 border-blue-200 rounded-lg font-medium hover:bg-blue-100 transition flex items-center gap-2 whitespace-nowrap"
+            className="px-4 py-2 bg-brand-100 text-brand-700 border-2 border-brand-200 rounded-lg font-medium hover:bg-brand-300 transition flex items-center gap-2 whitespace-nowrap"
             title="Cari koordinat berdasarkan alamat"
           >
             {isGeocoding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
@@ -404,7 +414,7 @@ export function ReportForm() {
           placeholder="Jelaskan kondisi banjir, dampak, dan kerusakan yang terjadi... (minimal 20 karakter)"
           rows={5}
           {...register('deskripsi')}
-          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition resize-none ${
+          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition resize-none ${
             errors.deskripsi
               ? 'border-red-500 bg-red-50'
               : 'border-gray-300 bg-white'
@@ -425,7 +435,7 @@ export function ReportForm() {
         </label>
 
         {!uploadedFile ? (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary hover:bg-blue-50 transition cursor-pointer">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-brand-500 hover:bg-brand-100 transition cursor-pointer">
             <input
               type="file"
               accept="image/*"
@@ -496,7 +506,7 @@ export function ReportForm() {
         <button
           type="button"
           onClick={() => setShowMap((v) => !v)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-blue-300 text-blue-700 text-sm font-medium hover:border-blue-500 hover:bg-blue-50 transition mb-3"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-brand-200 text-brand-800 text-sm font-medium hover:border-brand-500 hover:bg-brand-100 transition mb-3"
         >
           <MapPin className="w-4 h-4" />
           {showMap ? 'Tutup Peta' : 'Buka Peta untuk Tandai Lokasi'}
@@ -510,6 +520,8 @@ export function ReportForm() {
               type="button"
               onClick={() => {
                 setMarkerPos(null);
+                setSearchResultPos(null);
+                setValue('coordinateSource', undefined);
                 setValue('latitude', undefined);
                 setValue('longitude', undefined);
               }}
@@ -520,29 +532,38 @@ export function ReportForm() {
           </p>
         )}
 
+        {!markerPos && searchResultPos && (
+          <p className="text-xs text-amber-700 font-medium mb-2 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5" />
+            Titik hasil pencarian berada di {searchResultPos.lat.toFixed(6)}, {searchResultPos.lng.toFixed(6)}.
+            Klik peta untuk menetapkan titik final laporan.
+          </p>
+        )}
+
         {showMap && (
           <div
-            id="laporan-map"
-            className="w-full rounded-xl border-2 border-blue-200 overflow-hidden cursor-crosshair"
-            style={{ height: '280px' }}
-          />
+              id="laporan-map"
+              className="w-full rounded-xl border-2 border-brand-200 overflow-hidden cursor-crosshair"
+              style={{ height: '280px' }}
+            />
         )}
         {showMap && (
           <p className="text-xs text-gray-500 mt-1">Klik di peta untuk menandai lokasi banjir</p>
         )}
+        <input type="hidden" {...register('coordinateSource')} />
         <input type="hidden" {...register('latitude')} />
         <input type="hidden" {...register('longitude')} />
       </div>
 
       {/* Form Actions */}
-      <div className="flex gap-4 pt-6">
+        <div className="flex gap-4 pt-6">
         <button
           type="submit"
           disabled={isSubmitting || !isDirty || !isValid}
           className={`flex-1 px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
             isSubmitting || !isDirty || !isValid
               ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              : 'bg-success text-white hover:bg-green-600 active:scale-95'
+              : 'bg-brand-700 text-brand-100 hover:bg-brand-800 active:scale-95'
           }`}
         >
           {isSubmitting ? (
@@ -564,6 +585,7 @@ export function ReportForm() {
             setUploadedFile(null);
             setUploadError(null);
             setMarkerPos(null);
+            setSearchResultPos(null);
             setShowMap(false);
           }}
           disabled={!isDirty || isSubmitting}
@@ -578,7 +600,7 @@ export function ReportForm() {
       </div>
 
       {/* Form Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+      <div className="bg-brand-100 border border-brand-200 rounded-lg p-4 mt-6">
         <h4 className="font-semibold text-gray-900 mb-2">ℹ️ Informasi Penting</h4>
         <ul className="text-sm text-gray-700 space-y-1">
           <li>✓ Semua riwayat laporan dapat ditinjau oleh koordinator banjir setempat</li>

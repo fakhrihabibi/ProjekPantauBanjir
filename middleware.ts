@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '@/lib/admin-auth';
+import { AUTH_SESSION_COOKIE, verifySessionToken } from '@/lib/session';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  const sessionToken = request.cookies.get(AUTH_SESSION_COOKIE)?.value;
 
   if (!sessionToken) {
     const loginUrl = new URL('/admin/login', request.url);
@@ -21,7 +21,8 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const isValid = await verifyAdminSessionToken(sessionToken);
+    const session = await verifySessionToken(sessionToken);
+    const isValid = session?.role === 'ADMIN';
 
     if (!isValid) {
       const loginUrl = new URL('/admin/login', request.url);

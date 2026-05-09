@@ -4,7 +4,8 @@ import { AUTH_SESSION_COOKIE } from '@/lib/session';
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  const response = NextResponse.redirect(new URL('/', request.url));
+  const redirectTo = new URL('/', request.url);
+  const response = NextResponse.redirect(redirectTo);
 
   response.cookies.set(AUTH_SESSION_COOKIE, '', {
     httpOnly: true,

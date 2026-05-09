@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Navigation } from '@/components/Navigation';
 import { ToastProvider } from '@/components/ToastProvider';
+import { getCurrentUser } from '@/lib/auth';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,17 +14,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialUser = await getCurrentUser();
+
   return (
     <html lang="id">
-      <body className="bg-slate-100 text-slate-900">
+      <body className="bg-brand-100 text-brand-900">
         <ToastProvider />
         <div className="flex min-h-screen">
-          <Navigation />
+          <Navigation initialUser={initialUser} />
           <main className="flex-1 overflow-x-hidden">
             <div className="mx-auto w-full max-w-7xl">
               {children}
