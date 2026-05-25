@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/auth';
-import { AdminLaporanManager, type AdminReportItem } from './AdminLaporanManager';
+import { AdminLaporanManager } from './AdminLaporanManager';
+import { type AdminReportItem } from '@/lib/types';
 import Link from 'next/link';
 
 const normalizeRating = (value: string): AdminReportItem['rating'] => {

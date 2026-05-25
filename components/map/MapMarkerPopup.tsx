@@ -13,9 +13,10 @@ export function MapMarkerPopup({ point }: MapMarkerPopupProps) {
   const severityColor = getSeverityColor(point.severity);
   
   // Parse source from description [Sumber: Name]
-  const sourceMatch = point.description.match(/\[Sumber:\s*(.*?)\]/);
+  const descriptionText = point.description || '';
+  const sourceMatch = descriptionText.match(/\[Sumber:\s*(.*?)\]/);
   const sourceName = sourceMatch ? sourceMatch[1] : null;
-  const cleanedDescription = point.description.replace(/\[Sumber:\s*.*?\]/, '').trim();
+  const cleanedDescription = descriptionText.replace(/\[Sumber:\s*.*?\]/, '').trim();
 
   return (
     <div className="max-w-[280px] p-1">

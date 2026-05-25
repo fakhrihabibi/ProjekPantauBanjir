@@ -155,9 +155,11 @@ export default function EdukasiPage() {
   }, []);
 
   const emergencyContacts = [
-    { label: 'BPBD Kabupaten Bandung - Posko Utama', phone: '(022) 1234 5678', tel: '+622212345678' },
-    { label: 'Pusat Layanan Darurat Bojongsoang', phone: '0812 3456 7890', tel: '+6281234567890' },
-    { label: 'Koordinasi Relawan Siaga Banjir', phone: '0813 9876 5432', tel: '+6281398765432' },
+    { label: 'BPBD Kabupaten Bandung', phone: '(022) 5897-0947', tel: 'bpbd-bandung-1' },
+    { label: 'BPBD Kabupaten Bandung', phone: '(022) 5897-3945', tel: 'bpbd-bandung-2' },
+    { label: 'Nomor Darurat Nasional', phone: '119', tel: 'darurat-nasional-119' },
+    { label: 'Nomor Darurat Nasional', phone: '112', tel: 'darurat-nasional-112' },
+    { label: 'BPBD Jawa Barat', phone: '(022) 7272-593', tel: 'bpbd-jabar' },
   ];
 
   return (
@@ -277,7 +279,7 @@ export default function EdukasiPage() {
                     disabled={loadingCard === card.title}
                     className="rounded-full border border-slate-300 px-3 py-1 text-[10px] sm:text-xs font-semibold text-slate-700 transition hover:border-sky-500 hover:text-sky-700"
                   >
-                    {loadingCard === card.title ? '...' : 'Tanya AI'}
+                    {loadingCard === card.title ? '...' : 'Tanya'}
                   </button>
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-900">{card.title}</h3>
@@ -285,9 +287,9 @@ export default function EdukasiPage() {
                 
                 {activeAiCard === card.title ? (
                   <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 sm:px-4 sm:py-3 text-[10px] sm:text-xs leading-relaxed text-sky-900 animate-in fade-in slide-in-from-top-2">
-                    <p className="font-semibold">Respon AI:</p>
+                    <p className="font-semibold">Respon:</p>
                     {loadingCard === card.title ? (
-                      <p className="mt-1 italic">AI sedang menyusun jawaban...</p>
+                      <p className="mt-1 italic">Sedang menyusun jawaban...</p>
                     ) : (
                       <p className="mt-1">{aiResponses[card.title] ?? card.fallbackResponse}</p>
                     )}
@@ -297,7 +299,7 @@ export default function EdukasiPage() {
                   </div>
                 ) : (
                   <div className="mt-4 sm:mt-5 rounded-xl bg-slate-50 px-3 py-2 sm:px-4 sm:py-3 text-[10px] sm:text-xs text-slate-400">
-                    Klik Tanya AI untuk info cepat.
+                    Klik Tanya untuk info cepat.
                   </div>
                 )}
               </div>
@@ -333,27 +335,29 @@ export default function EdukasiPage() {
               📞
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-red-800">Darurat BPBD</h2>
-              <p className="text-xs sm:text-sm text-red-700">Hubungi nomor darurat.</p>
+              <h2 className="text-xl sm:text-2xl font-black text-red-800">Kontak Darurat</h2>
+              <p className="text-xs sm:text-sm text-red-700">Cek ulang ke sumber resmi sebelum digunakan.</p>
             </div>
+          </div>
+
+          <div className="mb-3 rounded-xl border border-red-200 bg-red-100 px-3 py-2 text-[11px] sm:text-sm text-red-900 leading-relaxed">
+            Nomor di bawah ditampilkan sebagai rujukan cepat. Verifikasi ke kanal resmi BPBD atau nomor darurat nasional sebelum mengandalkannya.
           </div>
 
           <div className="space-y-2 sm:space-y-3">
             {emergencyContacts.map((contact) => (
-              <a
+              <div
                 key={contact.tel}
-                href={`tel:${contact.tel}`}
                 className="block rounded-xl border border-red-200 bg-white px-3 py-3 sm:px-4 sm:py-4 shadow-sm transition hover:border-red-400 hover:shadow-md"
               >
                 <p className="text-xs sm:text-sm font-semibold text-slate-900">{contact.label}</p>
                 <p className="mt-0.5 sm:mt-1 text-base sm:text-lg font-bold text-red-700">{contact.phone}</p>
-                <p className="mt-0.5 text-[10px] text-slate-400">Klik untuk menelepon</p>
-              </a>
+              </div>
             ))}
           </div>
 
           <div className="mt-4 sm:mt-5 rounded-xl bg-red-100 p-3 sm:p-4 text-[11px] sm:text-sm text-red-900 leading-relaxed">
-            Simpan nomor darurat ini di ponsel Anda sekarang.
+            Simpan hanya setelah Anda cocokkan kembali dengan sumber resmi.
           </div>
         </aside>
       </section>

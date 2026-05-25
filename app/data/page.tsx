@@ -95,11 +95,11 @@ export default async function DataPage({ searchParams }: { searchParams?: { [key
           <div className="flex flex-row md:flex-col items-center md:items-end gap-2">
             <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-brand-50 rounded-2xl border border-brand-100">
                <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-brand-500 animate-pulse" />
-               <span className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-brand-700">BMKG Live</span>
+              <span className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-brand-700">Data BMKG</span>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-slate-50 rounded-xl border border-slate-100">
                <ShieldAlert className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400" />
-               <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-500">BNPB Sync</span>
+              <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-500">Status Laporan</span>
             </div>
           </div>
         </div>
@@ -148,7 +148,7 @@ export default async function DataPage({ searchParams }: { searchParams?: { [key
 
         {/* Water Level Gauge */}
         <div className="surface-card p-4 sm:p-6 flex flex-col">
-          <h2 className="text-sm sm:text-lg font-black text-slate-900 uppercase tracking-tight mb-4 sm:mb-6 text-center">Monitoring Level Air</h2>
+          <h2 className="text-sm sm:text-lg font-black text-slate-900 uppercase tracking-tight mb-4 sm:mb-6 text-center">Indikator Tinggi Air (Simulasi)</h2>
           <div className="flex-1 flex items-center justify-center min-h-[200px]">
             <WaterLevelGauge currentLevel={Math.round(simulatedWaterLevel)} warningLevel={70} dangerLevel={90} />
           </div>
@@ -156,7 +156,7 @@ export default async function DataPage({ searchParams }: { searchParams?: { [key
              <div className="flex items-start gap-2 sm:gap-3">
                 <Info className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400 shrink-0 mt-0.5" />
                 <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed italic">
-                  Simulasi level air berdasarkan kelembapan dan peringatan <span className="font-bold">BMKG</span>.
+                  Nilai ilustratif berdasarkan kelembapan dan peringatan <span className="font-bold">BMKG</span>, bukan sensor muka air langsung.
                 </p>
              </div>
           </div>
@@ -168,7 +168,7 @@ export default async function DataPage({ searchParams }: { searchParams?: { [key
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
             <h2 className="text-sm sm:text-lg font-black text-slate-900 uppercase tracking-tight">Historis Bencana</h2>
-            <p className="text-[9px] sm:text-xs text-slate-400 font-bold uppercase mt-0.5 sm:mt-1">Sumber: Database Lokal & Sinkronisasi DIBI</p>
+            <p className="text-[9px] sm:text-xs text-slate-400 font-bold uppercase mt-0.5 sm:mt-1">Data contoh internal untuk ilustrasi visual</p>
           </div>
           <div className="px-2 py-0.5 sm:px-3 sm:py-1 bg-slate-100 rounded-full text-[8px] sm:text-[10px] font-bold text-slate-500 uppercase">Beta</div>
         </div>

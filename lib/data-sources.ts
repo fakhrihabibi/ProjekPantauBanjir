@@ -26,7 +26,7 @@ export const dashboardDataSources: DashboardDataSource[] = [
   },
   {
     key: 'water-gauge',
-    label: 'Tingkat air real-time',
+    label: 'Indikator tinggi air',
     origin: 'Simulasi tampilan',
     note: 'Gauge saat ini hanya ilustrasi nilai, belum terhubung sensor atau API eksternal.',
   },

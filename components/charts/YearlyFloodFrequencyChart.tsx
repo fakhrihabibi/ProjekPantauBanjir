@@ -31,10 +31,10 @@ export function YearlyFloodFrequencyChart() {
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow">
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-gray-900">
-          Frekuensi Banjir per Tahun
+          Ilustrasi Frekuensi Banjir per Tahun
         </h2>
         <p className="text-sm text-gray-600 mt-1">
-          Jumlah kejadian banjir dan estimasi kerugian material (jutaan Rp)
+          Data contoh untuk membantu visualisasi tren historis (bukan data resmi)
         </p>
       </div>
 
@@ -91,14 +91,14 @@ export function YearlyFloodFrequencyChart() {
       <div className="mt-6 grid grid-cols-2 gap-4">
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-gray-700">
-            <span className="font-semibold">Tren Positif:</span> Tahun 2024 menunjukkan
-            penurunan frekuensi banjir hingga 36% dibanding tahun sebelumnya.
+            <span className="font-semibold">Catatan:</span> Data 2024 pada grafik ini lebih rendah daripada 2023,
+            sehingga tampil sebagai penurunan pada data contoh.
           </p>
         </div>
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-gray-700">
-            <span className="font-semibold">Perhatian:</span> Tahun 2022 mencatat
-            rekor tertinggi dengan 15 kejadian banjir.
+            <span className="font-semibold">Perhatian:</span> Angka 2022 pada grafik ini adalah titik tertinggi
+            di dataset contoh yang ditampilkan.
           </p>
         </div>
       </div>

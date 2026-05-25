@@ -256,7 +256,7 @@ export function processForecast(forecast: any) {
       const dateObj = dt ? new Date(String(dt).replace(' ', 'T')) : null;
       return { raw: e, dateObj };
     })
-    .filter((x) => x.dateObj instanceof Date && !isNaN(x.dateObj.getTime()))
+    .filter((x): x is { raw: any; dateObj: Date } => x.dateObj instanceof Date && !isNaN(x.dateObj.getTime()))
     .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
 
   if (parsed.length === 0) return { threeHourToday: [], daySummaries: {} };

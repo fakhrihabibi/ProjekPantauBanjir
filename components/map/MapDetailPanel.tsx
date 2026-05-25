@@ -21,9 +21,10 @@ export function MapDetailPanel({
   const severityColor = getSeverityColor(point.severity);
 
   // Parse source from description [Sumber: Name]
-  const sourceMatch = point.description.match(/\[Sumber:\s*(.*?)\]/);
+  const descriptionText = point.description || '';
+  const sourceMatch = descriptionText.match(/\[Sumber:\s*(.*?)\]/);
   const sourceName = sourceMatch ? sourceMatch[1] : null;
-  const cleanedDescription = point.description.replace(/\[Sumber:\s*.*?\]/, '').trim();
+  const cleanedDescription = descriptionText.replace(/\[Sumber:\s*.*?\]/, '').trim();
 
   return (
     <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-20 rounded-2xl border border-white/70 bg-white/95 p-3 sm:p-4 shadow-xl backdrop-blur lg:left-auto lg:top-24 lg:right-4 lg:bottom-4 lg:w-80 lg:overflow-auto animate-in fade-in slide-in-from-bottom-4 duration-300">

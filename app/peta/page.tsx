@@ -87,12 +87,6 @@ export default async function PetaPage({ searchParams }: { searchParams?: { [key
   return (
     <div className="page-shell">
       <div className="page-header">
-        {/* Show back to admin dashboard if navigated from admin and user is admin */}
-        {searchParams?.from === 'admin' ? (
-          (() => {
-            // server-side check for session role
-          })()
-        ) : null}
         <h1 className="text-3xl font-bold text-gray-900">Peta Titik Rawan Banjir</h1>
         {showBackToAdmin ? (
           <div className="mb-3">
