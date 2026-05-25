@@ -1,0 +1,29 @@
+{
+  "forecast": {
+    "data": {
+      "current": {
+        "weather_desc": "Cerah Berawan",
+        "t": 27,
+        "hu": 78,
+        "ws": 12,
+        "wd": "Timur",
+        "wd_to": "Barat",
+        "local_datetime": "2026-05-25T08:00:00+07:00"
+      }
+    },
+    "timestamp": "2026-05-25T08:00:00+07:00"
+  },
+  "peringatan": {
+    "count": 0,
+    "items": []
+  },
+  "ispu": {
+    "data": [
+      {
+        "nilai": 42,
+        "parameter": "PM2.5",
+        "waktu": "2026-05-25T07:30:00+07:00"
+      }
+    ]
+  }
+}

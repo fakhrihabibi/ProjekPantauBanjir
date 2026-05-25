@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { AdminLoginForm } from './AdminLoginForm';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Login Admin | PantauBanjir',
@@ -19,12 +19,11 @@ function resolveNextPath(nextValue: string | string[] | undefined) {
     return rawValue;
   }
 
-  return '/admin/dashboard';
+  return '/laporan';
 }
 
 export default async function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const nextPath = resolveNextPath(resolvedSearchParams?.next);
-
-  return <AdminLoginForm nextPath={nextPath} />;
+  redirect(`/login?from=admin&role=admin&next=${encodeURIComponent(nextPath)}`);
 }

@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'crypto';
 import { promisify } from 'util';
@@ -10,6 +10,7 @@ import {
   createSessionToken,
   verifySessionToken,
 } from '@/lib/session';
+import { ADMIN_SESSION_COOKIE } from './admin-auth';
 
 const scrypt = promisify(scryptCallback);
 
@@ -115,19 +116,81 @@ export async function verifyPassword(password: string, passwordHash: string) {
   return timingSafeEqual(derived, stored);
 }
 
-export async function getSessionFromCookieStore(cookieStore: { get(name: string): { value: string } | undefined }) {
-  const token = cookieStore.get(AUTH_SESSION_COOKIE)?.value;
+export async function getSessionFromCookieStore(
+  cookieStore: { get(name: string): { value: string } | undefined },
+  preferAdmin = false
+) {
+  const userToken = cookieStore.get(AUTH_SESSION_COOKIE)?.value;
+  const adminToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
 
-  if (!token) {
-    return null;
+  // 1. If we prefer admin (on admin path or with hint), check admin token first.
+  if (preferAdmin) {
+    if (adminToken) {
+      const session = await verifySessionToken(adminToken);
+      if (session && session.role === 'ADMIN') return session;
+    }
+    // If we preferred admin but didn't find one, we could fall back to user
+    // but usually admin areas should be strictly admin.
+    return null; 
   }
 
-  return verifySessionToken(token);
+  // 2. On public paths:
+  // First priority: User session
+  if (userToken) {
+    const session = await verifySessionToken(userToken);
+    if (session && session.role === 'USER') return session;
+  }
+
+  // Second priority: Admin session (Fallback so admins don't appear as guests on public pages)
+  if (adminToken) {
+    const session = await verifySessionToken(adminToken);
+    if (session && session.role === 'ADMIN') return session;
+  }
+
+  return null;
 }
 
 export async function getCurrentSession() {
-  const cookieStore = await cookies();
-  return getSessionFromCookieStore(cookieStore);
+  const [cookieStore, headerList] = await Promise.all([cookies(), headers()]);
+  
+  const pathname = headerList.get('x-pathname') || '';
+  const urlStr = headerList.get('x-url') || '';
+  const fromAdminHeader = headerList.get('x-from-admin') === 'true';
+  const referer = headerList.get('referer') || '';
+  
+  // Determine actual path even if called from an API
+  let activePath = pathname;
+  let hasAdminHint = fromAdminHeader;
+
+  // If this is an API call, try to get context from searchParams or referer
+  if (pathname.startsWith('/api/')) {
+    if (urlStr) {
+      try {
+        const url = new URL(urlStr);
+        const pathParam = url.searchParams.get('path');
+        if (pathParam) activePath = pathParam;
+        if (url.searchParams.get('from') === 'admin' || url.searchParams.get('role') === 'admin') {
+          hasAdminHint = true;
+        }
+      } catch {}
+    }
+    
+    if ((!activePath || activePath.startsWith('/api/')) && referer) {
+      try {
+        const refUrl = new URL(referer);
+        activePath = refUrl.pathname;
+        if (refUrl.searchParams.get('from') === 'admin' || refUrl.searchParams.get('role') === 'admin') {
+          hasAdminHint = true;
+        }
+      } catch {}
+    }
+  }
+  
+  const preferAdmin = activePath.startsWith('/admin') || 
+                      activePath.startsWith('/api/admin') || 
+                      hasAdminHint;
+  
+  return getSessionFromCookieStore(cookieStore, preferAdmin);
 }
 
 export async function getCurrentUser() {
@@ -140,7 +203,12 @@ export async function getCurrentUser() {
   const user = await findUserById(session.userId);
 
   if (!user) {
-    return null;
+    return {
+      id: session.userId,
+      name: session.name,
+      email: session.email,
+      role: session.role,
+    };
   }
 
   return {
@@ -152,7 +220,7 @@ export async function getCurrentUser() {
 }
 
 export async function requireAdminSession(cookieStore: { get(name: string): { value: string } | undefined }) {
-  const session = await getSessionFromCookieStore(cookieStore);
+  const session = await getSessionFromCookieStore(cookieStore, true);
 
   if (!session || session.role !== 'ADMIN') {
     return null;

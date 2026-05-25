@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { AUTH_SESSION_COOKIE, verifySessionToken } from '@/lib/session';
+import { verifySessionToken } from '@/lib/session';
+import { ADMIN_SESSION_COOKIE } from '@/lib/admin-auth';
 import { HOTSPOT_MATCH_RADIUS_METERS } from '@/lib/map-config';
 
 export const runtime = 'nodejs';
@@ -60,7 +61,7 @@ type ReportLinkingRow = {
   tingkatKeparahan: string;
 };
 
-async function ensureHotspotLinkForVerifiedReport(reportId: string, adminUserId: string) {
+async function ensureHotspotLinkForVerifiedReport(reportId: string, adminUserId: string | null) {
   const reportRows = await prisma.$queryRaw<ReportLinkingRow[]>`
     SELECT
       ST_Y(lw.koordinat::geometry) AS latitude,
@@ -162,7 +163,7 @@ async function ensureHotspotLinkForVerifiedReport(reportId: string, adminUserId:
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const sessionToken = request.cookies.get(AUTH_SESSION_COOKIE)?.value;
+    const sessionToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
     const session = sessionToken ? await verifySessionToken(sessionToken) : null;
 
     if (!session || session.role !== 'ADMIN') {
@@ -230,15 +231,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     if (updateData.status === 'Terverifikasi') {
+      // Ensure the session user corresponds to a real user in `users` table.
+      const adminRows = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "users" WHERE id = ${session.userId} LIMIT 1
+      `;
+
+      const adminUserId = adminRows[0]?.id ?? null;
+
       await prisma.$executeRaw`
         UPDATE "laporan_warga"
         SET "verifiedAt" = COALESCE("verifiedAt", NOW()),
-            "verifiedById" = COALESCE("verifiedById", ${session.userId}),
+            "verifiedById" = COALESCE("verifiedById", ${adminUserId}),
             "updatedAt" = NOW()
         WHERE id = ${reportId}
       `;
 
-      await ensureHotspotLinkForVerifiedReport(reportId, session.userId);
+      await ensureHotspotLinkForVerifiedReport(reportId, adminUserId ?? null);
     }
 
     // Fetch updated row with raw SQL to avoid Unsupported field in SELECT
@@ -291,10 +299,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   } catch (error) {
     console.error('Failed to update admin laporan:', error);
 
+    const message = error instanceof Error ? error.message : 'Gagal memperbarui laporan.';
+
     return NextResponse.json(
       {
         success: false,
-        error: 'Gagal memperbarui laporan.',
+        error: message,
       },
       { status: 500 }
     );
@@ -304,7 +314,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const sessionToken = request.cookies.get(AUTH_SESSION_COOKIE)?.value;
+    const sessionToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
     const session = sessionToken ? await verifySessionToken(sessionToken) : null;
 
     if (!session || session.role !== 'ADMIN') {

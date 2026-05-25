@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 type LoginPageProps = {
   searchParams?: Promise<{
     next?: string | string[];
+    role?: string | string[];
   }>;
 };
 
@@ -22,9 +23,15 @@ function resolveNextPath(nextValue: string | string[] | undefined) {
   return '/';
 }
 
+function resolveRole(roleValue: string | string[] | undefined) {
+  const rawValue = Array.isArray(roleValue) ? roleValue[0] : roleValue;
+  return rawValue?.toLowerCase() === 'admin' ? 'ADMIN' : 'USER';
+}
+
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const nextPath = resolveNextPath(resolvedSearchParams?.next);
+  const initialRole = resolveRole(resolvedSearchParams?.role);
 
-  return <LoginForm nextPath={nextPath} />;
+  return <LoginForm nextPath={nextPath} initialRole={initialRole} />;
 }

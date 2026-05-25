@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { reportFormSchema, ReportFormData } from '@/lib/schemas';
 import { prisma } from '@/lib/prisma';
-import { getSessionFromCookieStore } from '@/lib/auth';
+import { getCurrentSession } from '@/lib/auth';
 import { isWithinBojongsoangBounds } from '@/lib/map-config';
 
 export interface SubmitReportResponse {
@@ -20,6 +20,22 @@ export async function submitFloodReport(
     // Validate data using zod schema
     const validatedData = reportFormSchema.parse(data);
 
+    if (!validatedData.fotoUrl?.trim()) {
+      return {
+        success: false,
+        message: 'Validasi data gagal',
+        error: 'Foto kejadian wajib diunggah.',
+      };
+    }
+
+    if (validatedData.latitude === undefined || validatedData.longitude === undefined) {
+      return {
+        success: false,
+        message: 'Validasi data gagal',
+        error: 'Titik koordinat lokasi wajib ditandai di peta.',
+      };
+    }
+
     const hasKoordinat =
       validatedData.latitude !== undefined && validatedData.longitude !== undefined;
 
@@ -34,8 +50,7 @@ export async function submitFloodReport(
       };
     }
 
-    const cookieStore = await cookies();
-    const session = await getSessionFromCookieStore(cookieStore);
+    const session = await getCurrentSession();
 
     // Generate a unique ID
     const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`;

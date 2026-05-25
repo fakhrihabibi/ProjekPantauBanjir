@@ -10,6 +10,7 @@ const config: Config = {
       colors: {
         // Brand palette derived from the provided logo
         brand: {
+          600: '#0b72a0',
           900: '#041f36',
           800: '#063153',
           700: '#0b4f8a',

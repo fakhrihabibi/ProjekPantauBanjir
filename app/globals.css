@@ -31,22 +31,31 @@ html {
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   @apply bg-gray-50 text-gray-900 antialiased;
+  overflow-x: hidden;
 }
 
 @layer components {
   .page-shell {
-    @apply w-full p-4 md:p-6 lg:p-8;
+    @apply w-full min-w-0 p-3 sm:p-5 md:p-6 lg:p-8;
   }
 
   .page-header {
-    @apply mb-8 space-y-2;
+    @apply mb-4 sm:mb-6 lg:mb-8 space-y-1 sm:space-y-2;
   }
 
   .surface-card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-xl sm:rounded-2xl border border-slate-200 bg-white shadow-sm;
   }
 
   .info-panel {
-    @apply rounded-xl border p-6;
+    @apply rounded-xl border p-3 sm:p-6;
   }
+}
+
+/* Simple line-clamp fallback in case Tailwind plugin not enabled */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

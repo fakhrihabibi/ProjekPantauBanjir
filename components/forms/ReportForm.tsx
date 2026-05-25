@@ -43,6 +43,7 @@ export function ReportForm() {
       tingkatKeparahan: undefined,
       tanggalWaktu: '',
       fotoDeskripsi: '',
+      fotoUrl: '',
       coordinateSource: undefined,
       latitude: undefined,
       longitude: undefined,
@@ -197,11 +198,25 @@ export function ReportForm() {
   const handleRemoveFile = () => {
     setUploadedFile(null);
     setUploadError(null);
+    setValue('fotoUrl', '', {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   const onSubmit = async (data: ReportFormData) => {
     try {
       setIsSubmitting(true);
+
+      if (!uploadedFile) {
+        toast.error('Foto kejadian wajib diunggah terlebih dahulu');
+        return;
+      }
+
+      if (markerPos === null) {
+        toast.error('Titik koordinat lokasi wajib ditandai di peta');
+        return;
+      }
 
       // Upload foto first if there is a file
       let fotoUrl: string | undefined;
@@ -224,6 +239,10 @@ export function ReportForm() {
           return;
         }
         fotoUrl = uploadResult.url as string;
+        setValue('fotoUrl', fotoUrl, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
       }
 
       // Submit the form with fotoUrl
@@ -238,6 +257,7 @@ export function ReportForm() {
         // Reset form
         reset();
         setUploadedFile(null);
+        setUploadError(null);
 
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -272,50 +292,50 @@ export function ReportForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
       {/* Nama Pelapor */}
       <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
+        <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
           Nama Pelapor <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          placeholder="Masukkan nama lengkap Anda"
+          placeholder="Nama lengkap Anda"
           {...register('namaPelapor')}
-          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
+          className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
             errors.namaPelapor
               ? 'border-red-500 bg-red-50'
               : 'border-gray-300 bg-white'
           }`}
         />
         {errors.namaPelapor && (
-          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" />
+          <p className="text-red-600 text-[11px] sm:text-sm mt-1 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             {errors.namaPelapor.message}
           </p>
         )}
       </div>
 
       {/* Grid Row: Nomor Telepon + Tanggal */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Nomor Telepon */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
             Nomor Telepon <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"
             placeholder="08xx-xxxx-xxxx"
             {...register('nomorTelepon')}
-            className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
+            className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
               errors.nomorTelepon
                 ? 'border-red-500 bg-red-50'
                 : 'border-gray-300 bg-white'
             }`}
           />
           {errors.nomorTelepon && (
-            <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-              <AlertCircle className="w-4 h-4" />
+            <p className="text-red-600 text-[11px] sm:text-sm mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {errors.nomorTelepon.message}
             </p>
           )}
@@ -323,28 +343,28 @@ export function ReportForm() {
 
         {/* Tanggal dan Waktu */}
         <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
+          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
             Tanggal dan Waktu
           </label>
           <input
             type="datetime-local"
             {...register('tanggalWaktu')}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition bg-white"
+            className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition bg-white"
           />
         </div>
       </div>
 
       {/* Lokasi */}
       <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
+        <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
           Lokasi Banjir <span className="text-red-500">*</span>
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
-            placeholder="Contoh: Jl. Raya Bojongsoang, dekat Simpang Tiga"
+            placeholder="Contoh: Jl. Raya Bojongsoang"
             {...register('lokasi')}
-            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
+            className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition ${
               errors.lokasi
                 ? 'border-red-500 bg-red-50'
                 : 'border-gray-300 bg-white'
@@ -354,16 +374,16 @@ export function ReportForm() {
             type="button"
             onClick={cariLokasi}
             disabled={isGeocoding}
-            className="px-4 py-2 bg-brand-100 text-brand-700 border-2 border-brand-200 rounded-lg font-medium hover:bg-brand-300 transition flex items-center gap-2 whitespace-nowrap"
+            className="px-4 py-2 bg-brand-100 text-brand-700 border-2 border-brand-200 rounded-lg text-xs sm:text-sm font-bold hover:bg-brand-300 transition flex items-center justify-center gap-2 whitespace-nowrap active:scale-95"
             title="Cari koordinat berdasarkan alamat"
           >
-            {isGeocoding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            {isGeocoding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
             Cari di Peta
           </button>
         </div>
         {errors.lokasi && (
-          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" />
+          <p className="text-red-600 text-[11px] sm:text-sm mt-1 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             {errors.lokasi.message}
           </p>
         )}
@@ -371,7 +391,7 @@ export function ReportForm() {
 
       {/* Tingkat Keparahan */}
       <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
+        <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
           Tingkat Keparahan <span className="text-red-500">*</span>
         </label>
         <div
@@ -381,7 +401,7 @@ export function ReportForm() {
         >
           <select
             {...register('tingkatKeparahan')}
-            className={`w-full px-4 py-3 bg-transparent focus:outline-none cursor-pointer font-medium ${
+            className={`w-full px-3 sm:px-4 py-2 sm:py-3 bg-transparent text-sm focus:outline-none cursor-pointer font-medium ${
               tingkatKeparahan === 'Rendah'
                 ? 'text-green-700'
                 : tingkatKeparahan === 'Sedang'
@@ -392,14 +412,14 @@ export function ReportForm() {
             }`}
           >
             <option value="">Pilih tingkat keparahan...</option>
-            <option value="Rendah">Rendah - Genangan air, tidak mengganggu aktivitas</option>
-            <option value="Sedang">Sedang - Genangan sedang, hambatan aktivitas</option>
-            <option value="Parah">Parah - Genangan tinggi, berbahaya bagi jiwa</option>
+            <option value="Rendah">Rendah - Tidak ganggu aktivitas</option>
+            <option value="Sedang">Sedang - Hambatan aktivitas</option>
+            <option value="Parah">Parah - Berbahaya bagi jiwa</option>
           </select>
         </div>
         {errors.tingkatKeparahan && (
-          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" />
+          <p className="text-red-600 text-[11px] sm:text-sm mt-1 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             {errors.tingkatKeparahan.message}
           </p>
         )}
@@ -407,22 +427,22 @@ export function ReportForm() {
 
       {/* Deskripsi Kejadian */}
       <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
+        <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
           Deskripsi Kejadian <span className="text-red-500">*</span>
         </label>
         <textarea
-          placeholder="Jelaskan kondisi banjir, dampak, dan kerusakan yang terjadi... (minimal 20 karakter)"
-          rows={5}
+          placeholder="Jelaskan kondisi banjir... (minimal 20 karakter)"
+          rows={4}
           {...register('deskripsi')}
-          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition resize-none ${
+          className={`w-full px-3 sm:px-4 py-2 sm:py-3 border-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition resize-none ${
             errors.deskripsi
               ? 'border-red-500 bg-red-50'
               : 'border-gray-300 bg-white'
           }`}
         />
         {errors.deskripsi && (
-          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" />
+          <p className="text-red-600 text-[11px] sm:text-sm mt-1 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             {errors.deskripsi.message}
           </p>
         )}
@@ -430,12 +450,12 @@ export function ReportForm() {
 
       {/* File Upload - Foto Kejadian */}
       <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
-          Foto Kejadian (Opsional)
+        <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
+          Foto Kejadian <span className="text-red-500">*</span>
         </label>
 
         {!uploadedFile ? (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-brand-500 hover:bg-brand-100 transition cursor-pointer">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 text-center hover:border-brand-500 hover:bg-brand-100 transition cursor-pointer">
             <input
               type="file"
               accept="image/*"
@@ -444,24 +464,24 @@ export function ReportForm() {
               id="file-upload"
             />
             <label htmlFor="file-upload" className="cursor-pointer">
-              <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-700">
-                Klik atau seret foto ke sini
+              <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 mx-auto mb-2" />
+              <p className="text-xs sm:text-sm font-medium text-gray-700">
+                Klik atau seret foto
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Hanya gambar, max 5MB
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                Max 5MB
               </p>
             </label>
           </div>
         ) : (
-          <div className="border-2 border-green-300 bg-green-50 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <div className="text-left">
-                <p className="text-sm font-medium text-gray-900">
+          <div className="border-2 border-green-300 bg-green-50 rounded-lg p-3 sm:p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3 shrink-0">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+              <div className="text-left overflow-hidden">
+                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[150px] sm:max-w-none">
                   {uploadedFile.name}
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-[10px] sm:text-xs text-gray-600">
                   {(uploadedFile.size / 1024).toFixed(2)} KB
                 </p>
               </div>
@@ -471,28 +491,30 @@ export function ReportForm() {
               onClick={handleRemoveFile}
               className="text-red-600 hover:text-red-700 transition"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         )}
 
         {uploadError && (
-          <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" />
+          <p className="text-red-600 text-[11px] sm:text-sm mt-2 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             {uploadError}
           </p>
         )}
 
+        <p className="mt-2 text-[10px] sm:text-xs text-gray-500 italic">Foto wajib diunggah sebelum kirim.</p>
+
         {uploadedFile && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mt-3 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mt-3 mb-1.5 sm:mb-2">
               Deskripsi Foto (Opsional)
             </label>
             <input
               type="text"
-              placeholder="Contoh: Banjir di depan rumah warga"
+              placeholder="Contoh: Banjir di depan rumah"
               {...register('fotoDeskripsi')}
-              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition"
+              className="w-full px-3 sm:px-4 py-2 border-2 text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition"
             />
           </div>
         )}
@@ -500,22 +522,22 @@ export function ReportForm() {
 
       {/* Tandai Lokasi di Peta */}
       <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
-          Tandai Lokasi di Peta (Opsional)
+        <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
+          Tandai Lokasi di Peta <span className="text-red-500">*</span>
         </label>
         <button
           type="button"
           onClick={() => setShowMap((v) => !v)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-brand-200 text-brand-800 text-sm font-medium hover:border-brand-500 hover:bg-brand-100 transition mb-3"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-lg border-2 border-dashed border-brand-200 text-brand-800 text-xs sm:text-sm font-bold hover:border-brand-500 hover:bg-brand-100 transition mb-3 active:scale-95"
         >
           <MapPin className="w-4 h-4" />
-          {showMap ? 'Tutup Peta' : 'Buka Peta untuk Tandai Lokasi'}
+          {showMap ? 'Tutup Peta' : 'Buka Peta untuk Pin Lokasi'}
         </button>
 
         {markerPos && (
-          <p className="text-xs text-green-700 font-medium mb-2 flex items-center gap-1">
-            <CheckCircle className="w-3.5 h-3.5" />
-            Lokasi ditandai: {markerPos.lat.toFixed(6)}, {markerPos.lng.toFixed(6)}
+          <p className="text-[10px] sm:text-xs text-green-700 font-bold mb-2 flex items-center gap-1">
+            <CheckCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+            Lokasi: {markerPos.lat.toFixed(6)}, {markerPos.lng.toFixed(6)}
             <button
               type="button"
               onClick={() => {
@@ -532,11 +554,10 @@ export function ReportForm() {
           </p>
         )}
 
-        {!markerPos && searchResultPos && (
-          <p className="text-xs text-amber-700 font-medium mb-2 flex items-center gap-1">
-            <AlertCircle className="w-3.5 h-3.5" />
-            Titik hasil pencarian berada di {searchResultPos.lat.toFixed(6)}, {searchResultPos.lng.toFixed(6)}.
-            Klik peta untuk menetapkan titik final laporan.
+        {!markerPos && (
+          <p className="text-[10px] sm:text-xs text-amber-700 font-bold mb-2 flex items-center gap-1">
+            <AlertCircle className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+            Koordinat lokasi wajib ditandai.
           </p>
         )}
 
@@ -544,26 +565,23 @@ export function ReportForm() {
           <div
               id="laporan-map"
               className="w-full rounded-xl border-2 border-brand-200 overflow-hidden cursor-crosshair"
-              style={{ height: '280px' }}
+              style={{ height: '240px' }}
             />
         )}
         {showMap && (
-          <p className="text-xs text-gray-500 mt-1">Klik di peta untuk menandai lokasi banjir</p>
+          <p className="text-[10px] sm:text-xs text-gray-500 mt-1 italic">Klik peta untuk tandai titik banjir</p>
         )}
-        <input type="hidden" {...register('coordinateSource')} />
-        <input type="hidden" {...register('latitude')} />
-        <input type="hidden" {...register('longitude')} />
       </div>
 
       {/* Form Actions */}
-        <div className="flex gap-4 pt-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6">
         <button
           type="submit"
-          disabled={isSubmitting || !isDirty || !isValid}
-          className={`flex-1 px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
-            isSubmitting || !isDirty || !isValid
+          disabled={isSubmitting || !isDirty || !isValid || !uploadedFile || !markerPos}
+          className={`flex-1 px-6 py-3 rounded-lg font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 ${
+            isSubmitting || !isDirty || !isValid || !uploadedFile || !markerPos
               ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              : 'bg-brand-700 text-brand-100 hover:bg-brand-800 active:scale-95'
+              : 'bg-brand-700 text-brand-100 hover:bg-brand-800 active:scale-95 shadow-md shadow-brand-200'
           }`}
         >
           {isSubmitting ? (
@@ -587,12 +605,16 @@ export function ReportForm() {
             setMarkerPos(null);
             setSearchResultPos(null);
             setShowMap(false);
+            setValue('fotoUrl', '', {
+              shouldDirty: false,
+              shouldValidate: true,
+            });
           }}
           disabled={!isDirty || isSubmitting}
-          className={`px-6 py-3 rounded-lg font-semibold transition ${
+          className={`px-6 py-3 rounded-lg font-bold text-sm sm:text-base transition ${
             !isDirty || isSubmitting
-              ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
-              : 'bg-gray-300 text-gray-900 hover:bg-gray-400 active:scale-95'
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95'
           }`}
         >
           Reset
@@ -600,13 +622,11 @@ export function ReportForm() {
       </div>
 
       {/* Form Info */}
-      <div className="bg-brand-100 border border-brand-200 rounded-lg p-4 mt-6">
-        <h4 className="font-semibold text-gray-900 mb-2">ℹ️ Informasi Penting</h4>
-        <ul className="text-sm text-gray-700 space-y-1">
-          <li>✓ Semua riwayat laporan dapat ditinjau oleh koordinator banjir setempat</li>
-          <li>✓ Verifikasi laporan dilakukan dalam 24 jam kerja</li>
-          <li>✓ Laporan valid akan ditampilkan di halaman data dan peta</li>
-          <li>✓ Terima kasih atas kontribusi Anda dalam sistem peringatan dini ini</li>
+      <div className="bg-brand-100 border border-brand-200 rounded-xl p-4 sm:p-5 mt-4 sm:mt-6">
+        <h4 className="text-sm sm:text-base font-bold text-gray-900 mb-2">ℹ️ Info Pelaporan</h4>
+        <ul className="text-[11px] sm:text-sm text-gray-700 space-y-1.5 leading-relaxed">
+          <li className="flex gap-2"><span>✓</span> <span>Verifikasi dilakukan dalam 24 jam kerja.</span></li>
+          <li className="flex gap-2"><span>✓</span> <span>Laporan valid akan muncul di peta & statistik.</span></li>
         </ul>
       </div>
     </form>

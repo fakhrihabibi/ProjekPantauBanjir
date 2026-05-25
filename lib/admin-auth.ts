@@ -1,6 +1,6 @@
-import { AUTH_SESSION_COOKIE, createSessionToken, verifySessionToken } from '@/lib/session';
+import { createSessionToken, verifySessionToken } from '@/lib/session';
 
-export const ADMIN_SESSION_COOKIE = AUTH_SESSION_COOKIE;
+export const ADMIN_SESSION_COOKIE = 'pantaubanjir_admin_session';
 
 export async function createAdminSessionToken(user: {
   id: string;

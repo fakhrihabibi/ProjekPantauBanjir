@@ -1,5 +1,7 @@
-import { MapWrapper } from '@/components/MapWrapper';
+import { MapWrapper } from '@/components/map/MapWrapper';
 import { prisma } from '@/lib/prisma';
+import { getCurrentSession } from '@/lib/auth';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +20,7 @@ type MapPageStatsRow = {
   rendah_points: number;
 };
 
-export default async function PetaPage() {
+export default async function PetaPage({ searchParams }: { searchParams?: { [key: string]: string | string[] } }) {
   const fallbackStats = {
     total_points: 0,
     tinggi_points: 0,
@@ -51,7 +53,7 @@ export default async function PetaPage() {
     stats = statsRows[0] ?? fallbackStats;
     severityBreakdown = severityRows;
   } catch (error) {
-    console.error('Failed to load map page stats:', error);
+    console.warn('Map stats not available (database unreachable).');
   }
 
   const severityCounts = severityBreakdown.reduce(
@@ -78,74 +80,91 @@ export default async function PetaPage() {
         ? 'Sedang'
         : 'Rendah';
 
+  // Determine if we should show back-to-dashboard for admin
+  const session = await getCurrentSession();
+  const showBackToAdmin = searchParams?.from === 'admin' && session && session.role === 'ADMIN';
+
   return (
     <div className="page-shell">
       <div className="page-header">
+        {/* Show back to admin dashboard if navigated from admin and user is admin */}
+        {searchParams?.from === 'admin' ? (
+          (() => {
+            // server-side check for session role
+          })()
+        ) : null}
         <h1 className="text-3xl font-bold text-gray-900">Peta Titik Rawan Banjir</h1>
+        {showBackToAdmin ? (
+          <div className="mb-3">
+            <Link href="/laporan" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              ← Kembali ke Kelola Laporan
+            </Link>
+          </div>
+        ) : null}
         <p className="text-gray-600 mt-2">
           Visualisasi interaktif area rawan banjir di Bojongsoang dengan filter tingkat risiko, cluster marker, dan detail lokasi.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-6">
-        <div className="surface-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Total Titik</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.total_points}</p>
-          <p className="mt-1 text-sm text-gray-600">Titik rawan yang terdaftar</p>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 mb-6">
+        <div className="surface-card p-3 sm:p-4">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-gray-500">Total Titik</p>
+          <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-slate-900">{stats.total_points}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-gray-600">Titik terdaftar</p>
         </div>
-        <div className="surface-card p-4 border border-red-100 bg-red-50/60">
-          <p className="text-xs font-semibold uppercase tracking-wide text-red-500">Risiko Tinggi</p>
-          <p className="mt-2 text-3xl font-bold text-red-700">{stats.tinggi_points}</p>
-          <p className="mt-1 text-sm text-red-700/80">Prioritas penanganan</p>
+        <div className="surface-card p-3 sm:p-4 border border-red-100 bg-red-50/60">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-red-500">Tinggi</p>
+          <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-red-700">{stats.tinggi_points}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-red-700/80">Prioritas</p>
         </div>
-        <div className="surface-card p-4 border border-amber-100 bg-amber-50/60">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-500">Risiko Sedang</p>
-          <p className="mt-2 text-3xl font-bold text-amber-700">{stats.sedang_points}</p>
-          <p className="mt-1 text-sm text-amber-700/80">Perlu pemantauan</p>
+        <div className="surface-card p-3 sm:p-4 border border-amber-100 bg-amber-50/60">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-amber-500">Sedang</p>
+          <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-amber-700">{stats.sedang_points}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-amber-700/80">Pemantauan</p>
         </div>
-        <div className="surface-card p-4 border border-emerald-100 bg-emerald-50/60">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-500">Risiko Rendah</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-700">{stats.rendah_points}</p>
-          <p className="mt-1 text-sm text-emerald-700/80">Relatif lebih aman</p>
+        <div className="surface-card p-3 sm:p-4 border border-emerald-100 bg-emerald-50/60">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-emerald-500">Rendah</p>
+          <p className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-emerald-700">{stats.rendah_points}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-sm text-emerald-700/80">Aman</p>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="surface-card p-4 mb-6">
+      <div className="surface-card p-3 sm:p-4 mb-6">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-gray-900">Legenda Tingkat Risiko</h3>
-          <p className="text-xs text-gray-500">
-            Dominan saat ini: <span className="font-semibold text-gray-800">{dominantSeverity}</span>
+          <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Legenda Tingkat Risiko</h3>
+          <p className="text-[10px] sm:text-xs text-gray-500">
+            Dominan: <span className="font-semibold text-gray-800">{dominantSeverity}</span>
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-            <div className="h-4 w-4 rounded-full bg-red-500 shadow-sm"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 sm:px-4 sm:py-3">
+            <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-red-500 shadow-sm"></div>
             <div>
-              <p className="text-sm font-semibold text-red-700">Risiko Tinggi</p>
-              <p className="text-xs text-red-600">Jumlah: {stats.tinggi_points}</p>
+              <p className="text-xs sm:text-sm font-semibold text-red-700">Risiko Tinggi</p>
+              <p className="text-[10px] sm:text-xs text-red-600">Jumlah: {stats.tinggi_points}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-            <div className="h-4 w-4 rounded-full bg-amber-500 shadow-sm"></div>
+          <div className="flex items-center gap-2 sm:gap-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 sm:px-4 sm:py-3">
+            <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-amber-500 shadow-sm"></div>
             <div>
-              <p className="text-sm font-semibold text-amber-700">Risiko Sedang</p>
-              <p className="text-xs text-amber-600">Jumlah: {stats.sedang_points}</p>
+              <p className="text-xs sm:text-sm font-semibold text-amber-700">Risiko Sedang</p>
+              <p className="text-[10px] sm:text-xs text-amber-600">Jumlah: {stats.sedang_points}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
-            <div className="h-4 w-4 rounded-full bg-emerald-500 shadow-sm"></div>
+          <div className="flex items-center gap-2 sm:gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-3">
+            <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-emerald-500 shadow-sm"></div>
             <div>
-              <p className="text-sm font-semibold text-emerald-700">Risiko Rendah</p>
-              <p className="text-xs text-emerald-600">Jumlah: {stats.rendah_points}</p>
+              <p className="text-xs sm:text-sm font-semibold text-emerald-700">Risiko Rendah</p>
+              <p className="text-[10px] sm:text-xs text-emerald-600">Jumlah: {stats.rendah_points}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Map */}
-      <div className="surface-card overflow-hidden mb-8">
-        <div className="relative h-[420px] md:h-[520px]">
+      <div className="surface-card mb-8 overflow-hidden">
+        <div className="relative h-[500px] sm:h-[560px] md:h-[680px]">
           <MapWrapper stats={stats} severityBreakdown={severityBreakdown} />
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { MapComponent } from '@/components/MapComponent';
+import { MapComponent } from '@/components/map/MapComponent';
 
 interface MapWrapperProps {
   data?: any;

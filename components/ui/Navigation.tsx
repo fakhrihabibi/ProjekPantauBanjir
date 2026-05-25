@@ -16,6 +16,7 @@ import {
   LogOut,
   LogIn,
   UserPlus,
+  Cloud,
 } from 'lucide-react';
 import type { SessionUser } from '@/lib/session';
 
@@ -32,6 +33,11 @@ const navItems: NavItem[] = [
     icon: <MapPin className="w-5 h-5" />,
   },
   {
+    label: 'Cuaca',
+    href: '/cuaca',
+    icon: <Cloud className="w-5 h-5" />,
+  },
+  {
     label: 'Edukasi',
     href: '/edukasi',
     icon: <BookOpen className="w-5 h-5" />,
@@ -42,7 +48,7 @@ const navItems: NavItem[] = [
     icon: <Database className="w-5 h-5" />,
   },
   {
-    label: 'Laporan',
+    label: 'Kelola Laporan',
     href: '/laporan',
     icon: <AlertCircle className="w-5 h-5" />,
   },
@@ -57,10 +63,6 @@ export function Navigation({ initialUser }: NavigationProps) {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(initialUser);
   const pathname = usePathname() ?? '';
 
-  if (!pathname || pathname.startsWith('/admin')) {
-    return null;
-  }
-
   useEffect(() => {
     setCurrentUser(initialUser);
   }, [initialUser]);
@@ -70,7 +72,13 @@ export function Navigation({ initialUser }: NavigationProps) {
 
     const loadSession = async () => {
       try {
-        const response = await fetch('/api/auth/session', {
+        const url = new URL('/api/auth/session', window.location.origin);
+        url.searchParams.set('path', window.location.pathname);
+        if (window.location.search.includes('from=admin') || window.location.search.includes('role=admin')) {
+          url.searchParams.set('from', 'admin');
+        }
+
+        const response = await fetch(url.toString(), {
           cache: 'no-store',
         });
 
@@ -98,6 +106,10 @@ export function Navigation({ initialUser }: NavigationProps) {
       active = false;
     };
   }, []);
+
+  if (!pathname || pathname.startsWith('/admin')) {
+    return null;
+  }
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
@@ -144,15 +156,15 @@ export function Navigation({ initialUser }: NavigationProps) {
         </Link>
       ) : (
         <Link
-          href="/admin/dashboard"
+          href="/laporan"
           onClick={() => setSidebarOpen(false)}
           className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium text-brand-900 transition-colors hover:bg-brand-50"
         >
           <Shield className="h-4 w-4" />
-          <span>Admin Dashboard</span>
+          <span>Kelola Laporan</span>
         </Link>
       )}
-      <form action="/api/auth/logout" method="post">
+      <form action={currentUser.role === 'ADMIN' ? '/api/admin/logout' : '/api/auth/logout'} method="post">
         <button
           type="submit"
           className="flex w-full items-center gap-3 rounded-xl border border-brand-200 bg-brand-100 px-4 py-3 text-sm font-medium text-brand-900 transition-colors hover:bg-brand-200"
@@ -180,21 +192,13 @@ export function Navigation({ initialUser }: NavigationProps) {
         <UserPlus className="h-4 w-4" />
         <span>Daftar</span>
       </Link>
-      <Link
-        href="/admin/login"
-        onClick={() => setSidebarOpen(false)}
-        className="flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-100 px-4 py-3 text-sm font-medium text-brand-900 transition-colors hover:bg-brand-200"
-      >
-        <Shield className="h-4 w-4" />
-        <span>Login Admin</span>
-      </Link>
     </div>
   );
 
   return (
-    <>
+    <div className="w-full lg:contents">
       {/* Mobile Header */}
-      <header className="lg:hidden bg-brand-500 border-b border-brand-700 sticky top-0 z-40">
+      <header className="sticky top-0 z-40 w-full border-b border-brand-700 bg-brand-500 lg:hidden">
         <div className="flex items-center justify-between px-4 py-4">
           {brand}
           <button
@@ -234,7 +238,7 @@ export function Navigation({ initialUser }: NavigationProps) {
           <ul className="space-y-2">
             <li>
               <Link
-                href="/"
+                href={currentUser?.role === 'ADMIN' ? '/?from=admin' : '/'}
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
                   pathname === '/'
@@ -245,10 +249,12 @@ export function Navigation({ initialUser }: NavigationProps) {
                 <span>Beranda</span>
               </Link>
             </li>
-            {navItems.map((item) => (
+            {navItems.map((item) => {
+              const href = currentUser?.role === 'ADMIN' ? `${item.href}?from=admin` : item.href;
+              return (
               <li key={item.href}>
                 <Link
-                  href={item.href}
+                  href={href}
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors ${
                     isActive(item.href)
@@ -260,7 +266,8 @@ export function Navigation({ initialUser }: NavigationProps) {
                   <span>{item.label}</span>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </nav>
 
@@ -275,6 +282,6 @@ export function Navigation({ initialUser }: NavigationProps) {
           </p>
         </div>
       </aside>
-    </>
+    </div>
   );
 }

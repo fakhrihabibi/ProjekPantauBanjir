@@ -63,19 +63,10 @@ export function WaterLevelGauge({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Tingkat Air Real-time
-        </h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Monitoring ketinggian air Sungai Bojongsoang
-        </p>
-      </div>
-
-      <div className="flex flex-col items-center justify-center py-8">
+    <div className="flex flex-col items-center justify-center w-full">
+      <div className="flex flex-col items-center justify-center py-4">
         {/* Gauge Circle */}
-        <div className="relative w-48 h-48 mb-8">
+        <div className="relative w-48 h-48 mb-6">
           {/* Background Circle */}
           <svg className="w-full h-full" viewBox="0 0 200 200">
             {/* Background arc */}
@@ -84,8 +75,8 @@ export function WaterLevelGauge({
               cy="100"
               r="90"
               fill="none"
-              stroke="#e5e7eb"
-              strokeWidth="20"
+              stroke="#f1f5f9"
+              strokeWidth="16"
             />
 
             {/* Safe zone (green) */}
@@ -95,10 +86,10 @@ export function WaterLevelGauge({
               r="90"
               fill="none"
               stroke="#10b981"
-              strokeWidth="20"
+              strokeWidth="16"
               strokeDasharray="141.3 565.2"
               strokeDashoffset="0"
-              opacity="0.3"
+              opacity="0.1"
             />
 
             {/* Warning zone (yellow) */}
@@ -108,10 +99,10 @@ export function WaterLevelGauge({
               r="90"
               fill="none"
               stroke="#f59e0b"
-              strokeWidth="20"
+              strokeWidth="16"
               strokeDasharray="141.3 565.2"
               strokeDashoffset="-141.3"
-              opacity="0.3"
+              opacity="0.1"
             />
 
             {/* Danger zone (red) */}
@@ -121,10 +112,10 @@ export function WaterLevelGauge({
               r="90"
               fill="none"
               stroke="#ef4444"
-              strokeWidth="20"
+              strokeWidth="16"
               strokeDasharray="141.3 565.2"
               strokeDashoffset="-282.6"
-              opacity="0.3"
+              opacity="0.1"
             />
 
             {/* Current level fill */}
@@ -134,89 +125,63 @@ export function WaterLevelGauge({
               r="90"
               fill="none"
               stroke={getStatusHexColor(displayLevel)}
-              strokeWidth="20"
+              strokeWidth="16"
               strokeDasharray={`${(displayLevel / 100) * 565.2} 565.2`}
               strokeLinecap="round"
               strokeDashoffset="0"
               opacity="1"
               style={{
-                transition: 'stroke-dasharray 0.3s ease, stroke 0.3s ease',
+                transition: 'stroke-dasharray 1s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s ease',
               }}
             />
 
             {/* Center text background */}
-            <circle cx="100" cy="100" r="50" fill="white" />
+            <circle cx="100" cy="100" r="60" fill="white" />
           </svg>
 
           {/* Center content */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className={`text-4xl font-bold ${getStatusColor(displayLevel)}`}>
+            <p className={`text-5xl font-black ${getStatusColor(displayLevel)}`}>
               {displayLevel}%
             </p>
-            <p className="text-sm text-gray-600 mt-1">dari maksimal</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Sungai Bojong</p>
           </div>
         </div>
 
         {/* Status Badge */}
         <div
-          className={`inline-block px-4 py-2 rounded-full font-semibold text-lg border-2 ${getStatusBg(
+          className={`inline-block px-6 py-2 rounded-2xl font-black text-sm border-2 ${getStatusBg(
             displayLevel
-          )} ${getStatusColor(displayLevel)}`}
+          )} ${getStatusColor(displayLevel)} shadow-sm`}
         >
           {getStatusLabel(displayLevel)}
         </div>
       </div>
 
       {/* Level Indicators */}
-      <div className="mt-8 space-y-3">
+      <div className="mt-8 space-y-4 w-full px-4">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-700 font-medium">
-            Tingkat Bahaya
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            Titik Bahaya
           </span>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-600 rounded-full"></div>
-            <span className="text-sm font-semibold text-gray-900">
-              {dangerLevel}%
-            </span>
-          </div>
+          <span className="text-xs font-black text-red-600">
+            {dangerLevel}%
+          </span>
         </div>
 
         <div
-          className="w-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-600 h-3 rounded-full"
-          style={{
-            background:
-              'linear-gradient(to right, #10b981 0%, #f59e0b 50%, #ef4444 100%)',
-          }}
-        ></div>
+          className="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex"
+        >
+           <div className="h-full bg-emerald-500 w-1/3 opacity-30" />
+           <div className="h-full bg-amber-500 w-1/3 opacity-30" />
+           <div className="h-full bg-red-500 w-1/3 opacity-30" />
+        </div>
 
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-700 font-medium">
-            Tingkat Normal
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            Titik Aman
           </span>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-            <span className="text-sm font-semibold text-gray-900">0%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Additional Info */}
-      <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-xs text-gray-600">Pembacaan Terakhir</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {lastReadingTime ?? '--:--:--'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600">Tinggi Optimal</p>
-            <p className="text-sm font-semibold text-gray-900">20-30 cm</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600">Tren</p>
-            <p className="text-sm font-semibold text-green-600">↓ Menurun</p>
-          </div>
+          <span className="text-xs font-black text-emerald-600">0%</span>
         </div>
       </div>
     </div>

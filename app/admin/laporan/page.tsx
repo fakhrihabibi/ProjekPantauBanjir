@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/auth';
 import { AdminLaporanManager, type AdminReportItem } from './AdminLaporanManager';
+import Link from 'next/link';
 
 const normalizeRating = (value: string): AdminReportItem['rating'] => {
   const lowered = value.toLowerCase();
@@ -17,12 +18,14 @@ const normalizeRating = (value: string): AdminReportItem['rating'] => {
   return 'Rendah';
 };
 
-export default async function AdminLaporanPage() {
+export default async function AdminLaporanPage({ searchParams }: { searchParams?: { [key: string]: string | string[] } }) {
   const session = await getCurrentSession();
 
   if (!session || session.role !== 'ADMIN') {
     redirect('/admin/login?next=/admin/laporan');
   }
+
+  const showBackToAdmin = searchParams?.from === 'admin' && session && session.role === 'ADMIN';
 
   let reports: AdminReportItem[] = [];
   let databaseAvailable = true;
@@ -57,16 +60,24 @@ export default async function AdminLaporanPage() {
     }));
   } catch (error) {
     databaseAvailable = false;
-    console.error('Failed to load admin reports:', error);
+    console.warn('Admin reports not available (database unreachable).');
   }
 
   return (
     <div className="page-shell space-y-6 py-8">
       <section className="surface-card rounded-3xl p-8 shadow-sm ring-1 ring-slate-200">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Admin Laporan</p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900">Penilaian Prioritas Laporan</h1>
+        {showBackToAdmin ? (
+          <div className="mb-3">
+            <Link href="/laporan" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              ← Kembali ke Kelola Laporan
+            </Link>
+          </div>
+        ) : null}
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Kelola Laporan</p>
+        <h1 className="mt-2 text-3xl font-bold text-slate-900">Kelola Laporan & Tetapkan Prioritas</h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
-          Admin dapat melihat detail laporan, melakukan ACC verifikasi, dan memberi rating prioritas sebelum tindak lanjut lapangan.
+          Halaman ini digunakan untuk meninjau laporan warga, memverifikasi kebenaran lapangan, dan menetapkan prioritas penanganan.
+          Setiap perubahan tercatat untuk keperluan audit. Gunakan tombol di samping untuk melihat detail, menyetujui, atau memberi peringkat prioritas.
         </p>
       </section>
 

@@ -1,0 +1,22 @@
+{
+  "name": "PantauBanjir",
+  "short_name": "PantauBanjir",
+  "description": "Platform monitoring dan mitigasi banjir Bojongsoang",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1ea6ff",
+  "icons": [
+    {
+      "src": "/icons/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

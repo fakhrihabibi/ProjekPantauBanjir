@@ -77,7 +77,7 @@ export async function GET() {
         ON lw."titikRawanId" = tr.id
        AND lw.status = 'Terverifikasi'
       WHERE tr.koordinat IS NOT NULL
-      GROUP BY tr.id, tr.nama, tr.deskripsi, tr."tingkatRisiko", tr.koordinat
+      GROUP BY tr.id, tr.nama, tr.deskripsi, tr."tingkatRisiko", tr.koordinat, tr."createdAt"
       ORDER BY tr."createdAt" DESC
     `;
 

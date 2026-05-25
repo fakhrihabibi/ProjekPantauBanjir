@@ -5,6 +5,18 @@ import { findUserByEmail, normalizeEmail, verifyPassword } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
+function isConfiguredAdminCredential(email: string, password: string) {
+  const configuredEmail = process.env.ADMIN_USERNAME?.trim().toLowerCase();
+  const configuredPassword = process.env.ADMIN_PASSWORD;
+
+  return Boolean(
+    configuredEmail &&
+      configuredPassword &&
+      email === configuredEmail &&
+      password === configuredPassword
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -21,6 +33,27 @@ export async function POST(request: Request) {
     }
 
     const email = normalizeEmail(parsed.data.email);
+
+    if (isConfiguredAdminCredential(email, parsed.data.password)) {
+      const token = await createAdminSessionToken({
+        id: 'admin-env',
+        email,
+        name: 'Admin',
+      });
+
+      const response = NextResponse.json({ success: true });
+
+      response.cookies.set(ADMIN_SESSION_COOKIE, token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 60 * 8,
+      });
+
+      return response;
+    }
+
     const user = await findUserByEmail(email);
 
     if (!user) {

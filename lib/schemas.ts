@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const reportFormSchema = z.object({
+export const reportFormSchema = z
+  .object({
   namaPelapor: z
     .string()
     .min(3, 'Nama harus minimal 3 karakter')
@@ -34,7 +35,23 @@ export const reportFormSchema = z.object({
     .optional(),
   fotoUrl: z
     .string()
-    .url('URL foto tidak valid')
+    .trim()
+    .refine((value) => {
+      if (!value) {
+        return true;
+      }
+
+      if (value.startsWith('/uploads/')) {
+        return true;
+      }
+
+      try {
+        const parsedUrl = new URL(value);
+        return ['http:', 'https:'].includes(parsedUrl.protocol);
+      } catch {
+        return false;
+      }
+    }, 'URL foto tidak valid')
     .optional()
     .or(z.literal('')),
   coordinateSource: z
@@ -42,7 +59,24 @@ export const reportFormSchema = z.object({
     .optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
-});
+  })
+  .superRefine((value, ctx) => {
+    if (value.latitude === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Koordinat lokasi wajib ditandai di peta',
+        path: ['latitude'],
+      });
+    }
+
+    if (value.longitude === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Koordinat lokasi wajib ditandai di peta',
+        path: ['longitude'],
+      });
+    }
+  });
 
 export type ReportFormData = z.infer<typeof reportFormSchema>;
 
