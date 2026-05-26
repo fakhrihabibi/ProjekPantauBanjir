@@ -221,39 +221,67 @@ export function ReportForm() {
       // Upload foto first if there is a file
       let fotoUrl: string | undefined;
       if (uploadedFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', uploadedFile);
-
-        let uploadResponse;
+        // Use presigned URL flow: request signed URL from server, then PUT file directly to S3
+        let presignResp;
         try {
-          uploadResponse = await fetch('/api/upload', {
+          presignResp = await fetch('/api/upload/presign', {
             method: 'POST',
-            body: uploadFormData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: uploadedFile.name, contentType: uploadedFile.type }),
           });
         } catch (fetchError) {
-          console.error('Fetch upload error:', fetchError);
-          toast.error('❌ Kesalahan Jaringan', {
-            description: 'Gagal menghubungi server upload. Periksa koneksi internet Anda.',
-            duration: 4000,
-          });
+          console.error('Presign request error:', fetchError);
+          toast.error('❌ Kesalahan Jaringan', { description: 'Gagal menghubungi server upload. Periksa koneksi internet Anda.', duration: 4000 });
           setIsSubmitting(false);
           return;
         }
 
-        const uploadResult = await uploadResponse.json();
-        if (!uploadResponse.ok || !uploadResult.success) {
-          toast.error('❌ Gagal Upload Foto', {
-            description: uploadResult.error ?? 'Coba lagi nanti',
-            duration: 4000,
-          });
+        const presignResult = await presignResp.json();
+        if (!presignResp.ok || !presignResult.success || !presignResult.url) {
+          toast.error('❌ Gagal Mendapatkan URL Upload', { description: presignResult.error ?? 'Coba lagi nanti', duration: 4000 });
           setIsSubmitting(false);
           return;
         }
-        fotoUrl = uploadResult.url as string;
-        setValue('fotoUrl', fotoUrl, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
+
+        // Upload file directly to S3 using PUT
+        try {
+          const putResp = await fetch(presignResult.url, {
+            method: 'PUT',
+            headers: { 'Content-Type': uploadedFile.type },
+            body: uploadedFile,
+          });
+
+          if (!putResp.ok) {
+            console.error('S3 PUT failed', putResp.status, await putResp.text());
+            toast.error('❌ Gagal Upload Foto ke S3', { duration: 4000 });
+            setIsSubmitting(false);
+            return;
+          }
+        } catch (putErr) {
+          console.error('Upload to S3 error:', putErr);
+          toast.error('❌ Gagal Upload Foto', { duration: 4000 });
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Construct public URL (adjust if you use CloudFront/custom domain or private objects)
+        const bucket = process.env.NEXT_PUBLIC_S3_BUCKET || undefined;
+        if (bucket) {
+          fotoUrl = `https://${bucket}.s3.${process.env.NEXT_PUBLIC_AWS_REGION || process.env.NEXT_PUBLIC_AWS_DEFAULT_REGION || 'amazonaws.com'}/${encodeURIComponent(presignResult.key)}`;
+        } else {
+          // Fallback to public S3 URL using region env from server response if present
+          if (presignResult.key && presignResult.bucket && presignResult.region) {
+            const r = presignResult.region === 'us-east-1' ? '' : `.${presignResult.region}`;
+            fotoUrl = `https://${presignResult.bucket}.s3${r}.amazonaws.com/${encodeURIComponent(presignResult.key)}`;
+          } else if (presignResult.key) {
+            // Best-effort: assume virtual-hosted style without region
+            fotoUrl = `/${presignResult.key}`;
+          }
+        }
+
+        if (fotoUrl) {
+          setValue('fotoUrl', fotoUrl, { shouldDirty: true, shouldValidate: true });
+        }
       }
 
       // Submit the form with fotoUrl
