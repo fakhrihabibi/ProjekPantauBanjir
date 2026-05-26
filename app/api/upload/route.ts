@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,29 +20,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Ukuran file maksimal 5MB' }, { status: 400 });
     }
 
-    // Generate unique filename
+    // Generate unique filename/key for S3
     const ext = file.name.split('.').pop() ?? 'jpg';
-    const filename = `laporan_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const key = `uploads/laporan_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    // Ensure upload directory exists
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadDir, { recursive: true });
-
-    // Write file to disk
+    // Read file buffer
     const buffer = Buffer.from(await file.arrayBuffer());
-    const filePath = path.join(uploadDir, filename);
-    
+
+    // Configure S3 client (credentials are taken from env or IAM role)
+    const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || '';
+    const bucket = process.env.S3_BUCKET;
+    if (!bucket) {
+      return NextResponse.json({ success: false, error: 'S3_BUCKET belum dikonfigurasi' }, { status: 500 });
+    }
+
+    const s3 = new S3Client({ region: region || undefined });
+
     try {
-      await writeFile(filePath, buffer);
-    } catch (writeError) {
-      console.error('File write error:', writeError);
-      return NextResponse.json({ 
-        success: false, 
-        error: `Gagal menulis file ke disk: ${writeError instanceof Error ? writeError.message : 'Unknown error'}` 
+      await s3.send(new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+      }));
+    } catch (s3Error) {
+      console.error('S3 upload error:', s3Error);
+      return NextResponse.json({
+        success: false,
+        error: `Gagal mengunggah ke S3: ${s3Error instanceof Error ? s3Error.message : 'Unknown error'}`
       }, { status: 500 });
     }
 
-    const url = `/uploads/${filename}`;
+    // Construct object URL (best-effort; adjust for custom domains/CORS as needed)
+    let url;
+    if (!region || region === 'us-east-1') {
+      url = `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`;
+    } else {
+      url = `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+    }
+
     return NextResponse.json({ success: true, url });
   } catch (error) {
     console.error('Upload API general error:', error);
