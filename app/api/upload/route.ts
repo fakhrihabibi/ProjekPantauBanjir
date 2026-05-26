@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+// Ensure this route runs in Node.js runtime (not Edge) so AWS SDK works correctly
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +36,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'S3_BUCKET belum dikonfigurasi' }, { status: 500 });
     }
 
+    // Use dynamic import to avoid bundling issues with Turbopack during build
+    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
     const s3 = new S3Client({ region: region || undefined });
 
     try {
