@@ -31,12 +31,25 @@ export async function POST(request: NextRequest) {
 
     // Write file to disk
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(uploadDir, filename), buffer);
+    const filePath = path.join(uploadDir, filename);
+    
+    try {
+      await writeFile(filePath, buffer);
+    } catch (writeError) {
+      console.error('File write error:', writeError);
+      return NextResponse.json({ 
+        success: false, 
+        error: `Gagal menulis file ke disk: ${writeError instanceof Error ? writeError.message : 'Unknown error'}` 
+      }, { status: 500 });
+    }
 
     const url = `/uploads/${filename}`;
     return NextResponse.json({ success: true, url });
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ success: false, error: 'Gagal mengupload file' }, { status: 500 });
+    console.error('Upload API general error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: `Kesalahan server upload: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    }, { status: 500 });
   }
 }

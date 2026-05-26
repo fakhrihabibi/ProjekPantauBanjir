@@ -224,10 +224,21 @@ export function ReportForm() {
         const uploadFormData = new FormData();
         uploadFormData.append('file', uploadedFile);
 
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData,
-        });
+        let uploadResponse;
+        try {
+          uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+        } catch (fetchError) {
+          console.error('Fetch upload error:', fetchError);
+          toast.error('❌ Kesalahan Jaringan', {
+            description: 'Gagal menghubungi server upload. Periksa koneksi internet Anda.',
+            duration: 4000,
+          });
+          setIsSubmitting(false);
+          return;
+        }
 
         const uploadResult = await uploadResponse.json();
         if (!uploadResponse.ok || !uploadResult.success) {
