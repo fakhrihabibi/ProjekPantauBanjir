@@ -34,6 +34,17 @@ export async function POST(request: Request) {
 
     const email = normalizeEmail(parsed.data.email);
 
+    // Debug helpers (opt-in): if caller sets header `x-debug: 1`, include non-secret booleans
+    const debugEnabled = typeof (request as any).headers !== 'undefined' &&
+      (request as any).headers.get && (request as any).headers.get('x-debug') === '1';
+
+    const configuredEmail = process.env.ADMIN_USERNAME?.trim().toLowerCase();
+    const configuredPassword = process.env.ADMIN_PASSWORD;
+    const adminEmailConfigured = !!configuredEmail;
+    const adminPasswordConfigured = !!configuredPassword;
+    const emailMatchesConfigured = configuredEmail ? email === configuredEmail : false;
+    const passwordMatchesConfigured = configuredPassword ? parsed.data.password === configuredPassword : false;
+
     if (isConfiguredAdminCredential(email, parsed.data.password)) {
       const token = await createAdminSessionToken({
         id: 'admin-env',
@@ -57,35 +68,31 @@ export async function POST(request: Request) {
     const user = await findUserByEmail(email);
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Email atau password salah.',
-        },
-        { status: 401 }
-      );
+      const payload: any = { success: false, error: 'Email atau password salah.' };
+      if (debugEnabled) {
+        payload.debug = {
+          adminEmailConfigured,
+          adminPasswordConfigured,
+          emailMatchesConfigured,
+          passwordMatchesConfigured,
+          userFound: false,
+        };
+      }
+      return NextResponse.json(payload, { status: 401 });
     }
 
     if (user.role !== 'ADMIN') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Akun ini bukan akun admin.',
-        },
-        { status: 403 }
-      );
+      const payload: any = { success: false, error: 'Akun ini bukan akun admin.' };
+      if (debugEnabled) payload.debug = { userRole: user.role };
+      return NextResponse.json(payload, { status: 403 });
     }
 
     const isValid = await verifyPassword(parsed.data.password, user.passwordHash);
 
     if (!isValid) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Email atau password salah.',
-        },
-        { status: 401 }
-      );
+      const payload: any = { success: false, error: 'Email atau password salah.' };
+      if (debugEnabled) payload.debug = { adminEmailConfigured, adminPasswordConfigured, emailMatchesConfigured, passwordMatchesConfigured: false, userFound: true };
+      return NextResponse.json(payload, { status: 401 });
     }
 
     const token = await createAdminSessionToken(user);
