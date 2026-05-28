@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
+function mask(value: string | undefined | null) {
+  if (!value) return null;
+  if (value.length <= 3) return value;
+  return `${value.slice(0, 3)}***`;
+}
+
 // Ensure this route runs in Node.js runtime (not Edge) so AWS SDK works correctly
 export const runtime = 'nodejs';
 
@@ -33,8 +39,16 @@ export async function POST(request: NextRequest) {
     // Configure S3 client (credentials are taken from env or IAM role)
     const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || '';
     const bucket = process.env.S3_BUCKET;
+    const s3Endpoint = process.env.S3_ENDPOINT || process.env.S3Endpoint || '';
     if (!bucket) {
-      return NextResponse.json({ success: false, error: 'S3_BUCKET belum dikonfigurasi' }, { status: 500 });
+      return NextResponse.json({
+        success: false,
+        error: 'S3_BUCKET belum dikonfigurasi',
+        s3BucketMasked: mask(bucket),
+        s3BucketPresent: !!bucket,
+        s3EndpointMasked: mask(s3Endpoint),
+        region,
+      }, { status: 500 });
     }
 
     // Configure S3 client; support custom S3-compatible endpoint (e.g. Supabase Storage)
@@ -58,7 +72,11 @@ export async function POST(request: NextRequest) {
       console.error('S3 upload error:', s3Error);
       return NextResponse.json({
         success: false,
-        error: `Gagal mengunggah ke S3: ${s3Error instanceof Error ? s3Error.message : 'Unknown error'}`
+        error: `Gagal mengunggah ke S3: ${s3Error instanceof Error ? s3Error.message : 'Unknown error'}`,
+        s3BucketMasked: mask(bucket),
+        s3BucketPresent: !!bucket,
+        s3EndpointMasked: mask(s3Endpoint),
+        region,
       }, { status: 500 });
     }
 

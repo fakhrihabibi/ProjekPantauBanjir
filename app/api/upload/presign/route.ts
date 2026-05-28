@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 // Ensure Node runtime
 export const runtime = 'nodejs';
 
+function mask(value: string | undefined | null) {
+  if (!value) return null;
+  if (value.length <= 3) return value;
+  return `${value.slice(0, 3)}***`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -15,8 +21,16 @@ export async function POST(request: NextRequest) {
 
     const bucket = process.env.S3_BUCKET;
     const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || '';
+    const s3Endpoint = process.env.S3_ENDPOINT || process.env.S3Endpoint || '';
     if (!bucket) {
-      return NextResponse.json({ success: false, error: 'S3_BUCKET belum dikonfigurasi' }, { status: 500 });
+      return NextResponse.json({
+        success: false,
+        error: 'S3_BUCKET belum dikonfigurasi',
+        s3BucketMasked: mask(bucket),
+        s3BucketPresent: !!bucket,
+        s3EndpointMasked: mask(s3Endpoint),
+        region,
+      }, { status: 500 });
     }
 
     const key = `uploads/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${filename}`;
@@ -40,6 +54,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, url: signedUrl, key, bucket, region }, { status: 200 });
   } catch (err) {
     console.error('Presign error:', err);
-    return NextResponse.json({ success: false, error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
+    const s3Endpoint = process.env.S3_ENDPOINT || process.env.S3Endpoint || '';
+    const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || '';
+    const bucket = process.env.S3_BUCKET;
+    return NextResponse.json({
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+      s3BucketMasked: mask(bucket),
+      s3BucketPresent: !!bucket,
+      s3EndpointMasked: mask(s3Endpoint),
+      region,
+    }, { status: 500 });
   }
 }
