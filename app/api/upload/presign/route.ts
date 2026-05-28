@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
 
     // Configure S3 client to support S3-compatible endpoints (e.g. Supabase Storage)
     const s3Config: any = { region: region || undefined };
-    const s3Endpoint = process.env.S3_ENDPOINT || process.env.S3Endpoint || '';
     if (s3Endpoint) {
       s3Config.endpoint = s3Endpoint;
       s3Config.forcePathStyle = true;
