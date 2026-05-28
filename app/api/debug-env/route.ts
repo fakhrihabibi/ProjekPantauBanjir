@@ -15,6 +15,9 @@ export async function GET(_request: NextRequest) {
     const s3Endpoint = process.env.S3_ENDPOINT ?? process.env.S3Endpoint ?? null;
     const region = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? null;
     const nodeEnv = process.env.NODE_ENV ?? null;
+    const adminUser = process.env.ADMIN_USERNAME ?? null;
+    const adminPass = process.env.ADMIN_PASSWORD ?? null;
+    const adminSessionSecret = process.env.ADMIN_SESSION_SECRET ?? null;
 
     return NextResponse.json({
       success: true,
@@ -23,6 +26,10 @@ export async function GET(_request: NextRequest) {
       s3EndpointMasked: mask(s3Endpoint),
       region,
       nodeEnv,
+      adminUserMasked: mask(adminUser),
+      adminUserPresent: !!adminUser,
+      adminPasswordPresent: !!adminPass,
+      adminSessionSecretPresent: !!adminSessionSecret,
     });
   } catch (err) {
     return NextResponse.json({ success: false, error: err instanceof Error ? err.message : String(err) }, { status: 500 });
