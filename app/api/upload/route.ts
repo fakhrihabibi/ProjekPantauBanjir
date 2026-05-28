@@ -37,7 +37,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'S3_BUCKET belum dikonfigurasi' }, { status: 500 });
     }
 
-    const s3 = new S3Client({ region: region || undefined });
+    // Configure S3 client; support custom S3-compatible endpoint (e.g. Supabase Storage)
+    const s3Config: any = { region: region || undefined };
+    const s3Endpoint = process.env.S3_ENDPOINT || process.env.S3Endpoint || '';
+    if (s3Endpoint) {
+      s3Config.endpoint = s3Endpoint;
+      // Use path-style for many S3-compatible endpoints
+      s3Config.forcePathStyle = true;
+    }
+    const s3 = new S3Client(s3Config);
 
     try {
       await s3.send(new PutObjectCommand({

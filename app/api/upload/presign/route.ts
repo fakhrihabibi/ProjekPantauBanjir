@@ -25,7 +25,14 @@ export async function POST(request: NextRequest) {
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
     const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
-    const s3 = new S3Client({ region: region || undefined });
+    // Configure S3 client to support S3-compatible endpoints (e.g. Supabase Storage)
+    const s3Config: any = { region: region || undefined };
+    const s3Endpoint = process.env.S3_ENDPOINT || process.env.S3Endpoint || '';
+    if (s3Endpoint) {
+      s3Config.endpoint = s3Endpoint;
+      s3Config.forcePathStyle = true;
+    }
+    const s3 = new S3Client(s3Config);
     const command = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
 
     const signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
