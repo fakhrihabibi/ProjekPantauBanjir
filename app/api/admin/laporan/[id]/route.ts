@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 const updateLaporanSchema = z
   .object({
     status: z.string().min(3).max(80).optional(),
-    rating: z.enum(['Parah', 'Sedang', 'Rendah']).optional(),
+    rating: z.enum(['Tinggi', 'Sedang', 'Rendah']).optional(),
   })
   .refine((value) => value.status || value.rating, {
     message: 'Payload update tidak boleh kosong.',
@@ -36,7 +36,7 @@ const mapLaporanResponse = (row: {
     ? 'Sedang'
     : row.tingkatKeparahan.toLowerCase().includes('rendah')
       ? 'Rendah'
-      : 'Parah';
+      : 'Tinggi';
 
   return {
     id: row.id,
@@ -111,11 +111,11 @@ async function ensureHotspotLinkForVerifiedReport(reportId: string, adminUserId:
     return;
   }
 
-  const normalizedSeverity = report.tingkatKeparahan.toLowerCase().includes('parah')
-    ? 'Tinggi'
-    : report.tingkatKeparahan.toLowerCase().includes('sedang')
-      ? 'Sedang'
-      : 'Rendah';
+  const normalizedSeverity = report.tingkatKeparahan.toLowerCase().includes('sedang')
+    ? 'Sedang'
+    : report.tingkatKeparahan.toLowerCase().includes('rendah')
+      ? 'Rendah'
+      : 'Tinggi';
 
   const hotspotRows = await prisma.$queryRaw<{ id: string }[]>`
     INSERT INTO "titik_rawan" (

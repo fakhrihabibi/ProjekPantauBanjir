@@ -1,10 +1,12 @@
 'use server';
 
 import { z } from 'zod';
+import { classifyFloodSeverityByHeight } from '@/lib/flood-severity';
 
 const laporanWargaSchema = z.object({
   namaPelapor: z.string().min(3, 'Nama pelapor minimal 3 karakter').max(100),
-  tingkatKeparahan: z.enum(['Rendah', 'Sedang', 'Parah']),
+  tinggiGenanganCm: z.number().int().min(1, 'Tinggi genangan minimal 1 cm').max(1000),
+  tingkatKeparahan: z.enum(['Rendah', 'Sedang', 'Tinggi']),
   deskripsiKejadian: z
     .string()
     .min(20, 'Deskripsi kejadian minimal 20 karakter')
@@ -23,10 +25,12 @@ export type SubmitLaporanWargaResult = {
 
 export async function submitLaporanWarga(input: LaporanWargaInput): Promise<SubmitLaporanWargaResult> {
   const validated = laporanWargaSchema.parse(input);
+  const tingkatKeparahan = classifyFloodSeverityByHeight(validated.tinggiGenanganCm);
 
   const prismaReadyPayload = {
     namaPelapor: validated.namaPelapor,
-    tingkatKeparahan: validated.tingkatKeparahan,
+    tinggiGenanganCm: validated.tinggiGenanganCm,
+    tingkatKeparahan,
     deskripsiKejadian: validated.deskripsiKejadian,
     fotoUrl: validated.fotoUrl ?? null,
     titikRawanId: validated.titikRawanId ?? null,

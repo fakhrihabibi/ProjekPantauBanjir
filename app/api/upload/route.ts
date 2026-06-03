@@ -7,6 +7,10 @@ function mask(value: string | undefined | null) {
   return `${value.slice(0, 3)}***`;
 }
 
+function encodeS3Key(key: string) {
+  return key.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+}
+
 // Ensure this route runs in Node.js runtime (not Edge) so AWS SDK works correctly
 export const runtime = 'nodejs';
 
@@ -80,11 +84,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Construct object URL (best-effort; adjust for custom domains/CORS as needed)
+    const encodedKey = encodeS3Key(key);
     let url;
     if (!region || region === 'us-east-1') {
-      url = `https://${bucket}.s3.amazonaws.com/${encodeURIComponent(key)}`;
+      url = `https://${bucket}.s3.amazonaws.com/${encodedKey}`;
     } else {
-      url = `https://${bucket}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+      url = `https://${bucket}.s3.${region}.amazonaws.com/${encodedKey}`;
     }
 
     return NextResponse.json({ success: true, url });

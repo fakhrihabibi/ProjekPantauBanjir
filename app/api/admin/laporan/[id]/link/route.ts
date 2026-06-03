@@ -45,11 +45,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Create titik_rawan entry
-    const normalizedSeverity = report.tingkatKeparahan.toLowerCase().includes('parah')
-      ? 'Tinggi'
-      : report.tingkatKeparahan.toLowerCase().includes('sedang')
+    const normalizedSeverity = report.tingkatKeparahan.toLowerCase().includes('sedang')
       ? 'Sedang'
-      : 'Rendah';
+      : report.tingkatKeparahan.toLowerCase().includes('rendah')
+        ? 'Rendah'
+        : 'Tinggi';
 
     const hotspotRows = await prisma.$queryRaw<{ id: string }[]>`
       INSERT INTO "titik_rawan" (

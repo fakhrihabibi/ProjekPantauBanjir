@@ -5,6 +5,7 @@ import { reportFormSchema, ReportFormData } from '@/lib/schemas';
 import { prisma } from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/auth';
 import { isWithinBojongsoangBounds } from '@/lib/map-config';
+import { classifyFloodSeverityByHeight } from '@/lib/flood-severity';
 
 export interface SubmitReportResponse {
   success: boolean;
@@ -19,6 +20,7 @@ export async function submitFloodReport(
   try {
     // Validate data using zod schema
     const validatedData = reportFormSchema.parse(data);
+    const tingkatKeparahan = classifyFloodSeverityByHeight(validatedData.tinggiGenanganCm);
 
     if (!validatedData.fotoUrl?.trim()) {
       return {
@@ -64,6 +66,7 @@ export async function submitFloodReport(
           "nomorTelepon",
           lokasi,
           "tingkatKeparahan",
+          "tinggiGenanganCm",
           "deskripsiKejadian",
           "fotoUrl",
           "coordinateSource",
@@ -77,7 +80,8 @@ export async function submitFloodReport(
           ${validatedData.namaPelapor},
           ${validatedData.nomorTelepon ?? null},
           ${validatedData.lokasi},
-          ${validatedData.tingkatKeparahan},
+          ${tingkatKeparahan},
+          ${validatedData.tinggiGenanganCm},
           ${validatedData.deskripsi},
           ${validatedData.fotoUrl ?? null},
           ${validatedData.coordinateSource ?? 'manual_pin'},
@@ -96,6 +100,7 @@ export async function submitFloodReport(
           "nomorTelepon",
           lokasi,
           "tingkatKeparahan",
+          "tinggiGenanganCm",
           "deskripsiKejadian",
           "fotoUrl",
           "coordinateSource",
@@ -108,7 +113,8 @@ export async function submitFloodReport(
           ${validatedData.namaPelapor},
           ${validatedData.nomorTelepon ?? null},
           ${validatedData.lokasi},
-          ${validatedData.tingkatKeparahan},
+          ${tingkatKeparahan},
+          ${validatedData.tinggiGenanganCm},
           ${validatedData.deskripsi},
           ${validatedData.fotoUrl ?? null},
           ${validatedData.coordinateSource ?? null},

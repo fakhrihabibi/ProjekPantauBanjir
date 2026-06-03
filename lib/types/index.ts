@@ -20,7 +20,7 @@ export interface AdminReportItem {
   waktu: string;
   deskripsi: string;
   status: string;
-  rating: 'Parah' | 'Sedang' | 'Rendah';
+  rating: 'Tinggi' | 'Sedang' | 'Rendah';
   fotoUrl?: string | null;
 }
 

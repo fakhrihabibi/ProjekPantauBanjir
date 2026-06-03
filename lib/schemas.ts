@@ -14,11 +14,19 @@ export const reportFormSchema = z
     .string()
     .min(5, 'Lokasi harus minimal 5 karakter')
     .max(200, 'Lokasi terlalu panjang'),
+  tinggiGenanganCm: z
+    .number({
+      required_error: 'Tinggi genangan wajib diisi',
+      invalid_type_error: 'Tinggi genangan harus berupa angka',
+    })
+    .int('Tinggi genangan harus berupa bilangan bulat')
+    .min(1, 'Tinggi genangan minimal 1 cm')
+    .max(1000, 'Tinggi genangan terlalu besar'),
   deskripsi: z
     .string()
     .min(20, 'Deskripsi harus minimal 20 karakter')
     .max(2000, 'Deskripsi terlalu panjang'),
-  tingkatKeparahan: z.enum(['Rendah', 'Sedang', 'Parah'], {
+  tingkatKeparahan: z.enum(['Rendah', 'Sedang', 'Tinggi'], {
     message: 'Pilih tingkat keparahan yang valid',
   }),
   tanggalWaktu: z

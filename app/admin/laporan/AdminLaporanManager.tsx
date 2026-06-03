@@ -3,7 +3,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Trash2, Loader2, CheckCircle2, AlertCircle, Eye, ExternalLink, Link as LinkIcon } from 'lucide-react';
-import Image from 'next/image';
 import { getStatusColorClasses, getSeverityColor } from '@/lib/utils';
 import type { AdminReportItem, SeverityLevel } from '@/lib/types';
 
@@ -12,7 +11,7 @@ type AdminLaporanManagerProps = {
   databaseAvailable: boolean;
 };
 
-const ratingOptions: AdminReportItem['rating'][] = ['Parah', 'Sedang', 'Rendah'];
+const ratingOptions: AdminReportItem['rating'][] = ['Tinggi', 'Sedang', 'Rendah'];
 
 export function AdminLaporanManager({ initialReports, databaseAvailable }: AdminLaporanManagerProps) {
   const [reports, setReports] = useState<AdminReportItem[]>(initialReports);
@@ -21,6 +20,7 @@ export function AdminLaporanManager({ initialReports, databaseAvailable }: Admin
   const [modalVisible, setModalVisible] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   const selectedReport = useMemo(
     () => reports.find((item) => item.id === selectedId) ?? null,
@@ -35,6 +35,12 @@ export function AdminLaporanManager({ initialReports, databaseAvailable }: Admin
     }
     setModalVisible(false);
   }, [isModalOpen]);
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setPhotoFailed(false);
+    }
+  }, [isModalOpen, selectedId]);
 
   const updateReport = async (
     reportId: string,
@@ -274,15 +280,14 @@ export function AdminLaporanManager({ initialReports, databaseAvailable }: Admin
             {/* Modal Body */}
             <div className="max-h-[70vh] overflow-y-auto p-6 sm:p-8 space-y-8">
               {/* Photo Section */}
-              {selectedReport.fotoUrl ? (
+              {selectedReport.fotoUrl && !photoFailed ? (
                 <div className="space-y-3">
                   <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-inner">
-                    <Image
+                    <img
                       src={selectedReport.fotoUrl}
                       alt="Foto laporan"
-                      fill
-                      className="object-cover"
-                      unoptimized={true}
+                      className="h-full w-full object-cover"
+                      onError={() => setPhotoFailed(true)}
                     />
                   </div>
                   <a
@@ -298,7 +303,9 @@ export function AdminLaporanManager({ initialReports, databaseAvailable }: Admin
               ) : (
                 <div className="flex flex-col items-center justify-center p-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <AlertCircle className="w-8 h-8 text-slate-300 mb-2" />
-                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Tidak Ada Foto</p>
+                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                    {selectedReport.fotoUrl ? 'Foto gagal dimuat' : 'Tidak Ada Foto'}
+                  </p>
                 </div>
               )}
 

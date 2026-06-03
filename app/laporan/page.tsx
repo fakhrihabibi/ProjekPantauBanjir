@@ -20,8 +20,8 @@ type LaporanRow = {
 const normalizeRating = (value: string): AdminReportItem['rating'] => {
   const lowered = value.toLowerCase();
 
-  if (lowered.includes('parah') || lowered.includes('tinggi') || lowered.includes('darurat')) {
-    return 'Parah';
+  if (lowered.includes('tinggi') || lowered.includes('parah') || lowered.includes('darurat')) {
+    return 'Tinggi';
   }
 
   if (lowered.includes('sedang')) {

@@ -38,6 +38,7 @@ model LaporanWarga {
   nomorTelepon    String?
   lokasi          String?
   tingkatKeparahan String
+  tinggiGenanganCm Int?
   deskripsiKejadian String
   fotoUrl         String?
   koordinat       Unsupported("geometry(Point, 4326)")?

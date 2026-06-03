@@ -7,11 +7,22 @@ import { reportFormSchema, ReportFormData } from '@/lib/schemas';
 import { submitFloodReport } from '@/app/actions';
 import { toast } from 'sonner';
 import { Upload, X, AlertCircle, CheckCircle, MapPin, Search, Loader2 } from 'lucide-react';
+import { classifyFloodSeverityByHeight, getFloodSeverityLabel } from '@/lib/flood-severity';
+
+const floodHeightOptions = {
+  Rendah: [10, 15, 20, 25, 30],
+  Sedang: [35, 40, 45, 50, 55, 60, 65, 70],
+  Tinggi: [75, 80, 85, 90, 95, 100, 110, 120],
+} as const;
 
 function getLocalDateTimeValue() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 16);
+}
+
+function encodeS3Key(key: string) {
+  return key.split('/').map((segment) => encodeURIComponent(segment)).join('/');
 }
 
 export function ReportForm() {
@@ -40,6 +51,7 @@ export function ReportForm() {
       nomorTelepon: '',
       lokasi: '',
       deskripsi: '',
+      tinggiGenanganCm: undefined,
       tingkatKeparahan: undefined,
       tanggalWaktu: '',
       fotoDeskripsi: '',
@@ -50,7 +62,23 @@ export function ReportForm() {
     },
   });
 
-  const tingkatKeparahan = watch('tingkatKeparahan');
+  const tinggiGenanganCm = watch('tinggiGenanganCm');
+  const tingkatKeparahan =
+    typeof tinggiGenanganCm === 'number' && !Number.isNaN(tinggiGenanganCm)
+      ? classifyFloodSeverityByHeight(tinggiGenanganCm)
+      : undefined;
+
+  useEffect(() => {
+    if (tinggiGenanganCm === undefined || Number.isNaN(tinggiGenanganCm)) {
+      setValue('tingkatKeparahan', undefined, { shouldDirty: false, shouldValidate: false });
+      return;
+    }
+
+    setValue('tingkatKeparahan', tingkatKeparahan, {
+      shouldDirty: false,
+      shouldValidate: true,
+    });
+  }, [setValue, tinggiGenanganCm, tingkatKeparahan]);
 
   useEffect(() => {
     setValue('tanggalWaktu', getLocalDateTimeValue(), {
@@ -267,12 +295,15 @@ export function ReportForm() {
         // Construct public URL (adjust if you use CloudFront/custom domain or private objects)
         const bucket = process.env.NEXT_PUBLIC_S3_BUCKET || undefined;
         if (bucket) {
-          fotoUrl = `https://${bucket}.s3.${process.env.NEXT_PUBLIC_AWS_REGION || process.env.NEXT_PUBLIC_AWS_DEFAULT_REGION || 'amazonaws.com'}/${encodeURIComponent(presignResult.key)}`;
+          const region = process.env.NEXT_PUBLIC_AWS_REGION || process.env.NEXT_PUBLIC_AWS_DEFAULT_REGION || '';
+          const encodedKey = encodeS3Key(presignResult.key);
+          const regionPart = region && region !== 'us-east-1' ? `.s3.${region}` : '.s3';
+          fotoUrl = `https://${bucket}${regionPart}.amazonaws.com/${encodedKey}`;
         } else {
           // Fallback to public S3 URL using region env from server response if present
           if (presignResult.key && presignResult.bucket && presignResult.region) {
             const r = presignResult.region === 'us-east-1' ? '' : `.${presignResult.region}`;
-            fotoUrl = `https://${presignResult.bucket}.s3${r}.amazonaws.com/${encodeURIComponent(presignResult.key)}`;
+            fotoUrl = `https://${presignResult.bucket}.s3${r}.amazonaws.com/${encodeS3Key(presignResult.key)}`;
           } else if (presignResult.key) {
             // Best-effort: assume virtual-hosted style without region
             fotoUrl = `/${presignResult.key}`;
@@ -428,38 +459,63 @@ export function ReportForm() {
         )}
       </div>
 
-      {/* Tingkat Keparahan */}
+      {/* Tinggi Genangan */}
       <div>
         <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-1.5 sm:mb-2">
-          Tingkat Keparahan <span className="text-red-500">*</span>
+          Tinggi Genangan (cm) <span className="text-red-500">*</span>
         </label>
-        <div
-          className={`border-2 rounded-lg overflow-hidden transition ${getSeverityColor(
-            tingkatKeparahan
-          )}`}
-        >
+        <div className={`border-2 rounded-lg overflow-hidden transition ${getSeverityColor(tingkatKeparahan)}`}>
+          <input type="hidden" {...register('tingkatKeparahan')} />
           <select
-            {...register('tingkatKeparahan')}
-            className={`w-full px-3 sm:px-4 py-2 sm:py-3 bg-transparent text-sm focus:outline-none cursor-pointer font-medium ${
+            {...register('tinggiGenanganCm', {
+              setValueAs: (value) => (value === '' ? undefined : Number(value)),
+            })}
+            className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm focus:outline-none cursor-pointer font-medium appearance-none ${
               tingkatKeparahan === 'Rendah'
-                ? 'text-green-700'
+                ? 'text-green-800 bg-green-50'
                 : tingkatKeparahan === 'Sedang'
-                  ? 'text-yellow-700'
-                  : tingkatKeparahan === 'Parah'
-                    ? 'text-red-700'
-                    : 'text-gray-700'
+                  ? 'text-amber-800 bg-amber-50'
+                  : tingkatKeparahan === 'Tinggi'
+                    ? 'text-red-700 bg-red-50'
+                    : 'text-gray-700 bg-white'
             }`}
           >
-            <option value="">Pilih tingkat keparahan...</option>
-            <option value="Rendah">Rendah - Tidak ganggu aktivitas</option>
-            <option value="Sedang">Sedang - Hambatan aktivitas</option>
-            <option value="Parah">Parah - Berbahaya bagi jiwa</option>
+            <option value="">Pilih tinggi genangan...</option>
+            <optgroup label="Rendah (10–30 cm)">
+              {floodHeightOptions.Rendah.map((value) => (
+                <option key={value} value={value}>
+                  {value} cm
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Sedang (35–70 cm)">
+              {floodHeightOptions.Sedang.map((value) => (
+                <option key={value} value={value}>
+                  {value} cm
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Tinggi (75–120 cm)">
+              {floodHeightOptions.Tinggi.map((value) => (
+                <option key={value} value={value}>
+                  {value} cm
+                </option>
+              ))}
+            </optgroup>
           </select>
         </div>
-        {errors.tingkatKeparahan && (
+        <p className="mt-1 text-[11px] sm:text-sm text-slate-500">
+          Patokan: Rendah 10–30 cm, Sedang 31–70 cm, Tinggi di atas 70 cm.
+        </p>
+        {tinggiGenanganCm !== undefined && !Number.isNaN(tinggiGenanganCm) && (
+          <p className="mt-1 text-[11px] sm:text-sm font-semibold text-slate-700">
+            Klasifikasi: {getFloodSeverityLabel(tinggiGenanganCm)}
+          </p>
+        )}
+        {errors.tinggiGenanganCm && (
           <p className="text-red-600 text-[11px] sm:text-sm mt-1 flex items-center gap-1">
             <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            {errors.tingkatKeparahan.message}
+            {errors.tinggiGenanganCm.message}
           </p>
         )}
       </div>
