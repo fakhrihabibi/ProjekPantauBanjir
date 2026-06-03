@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate:dev": "npx prisma migrate dev",
+    "prisma:migrate:deploy": "npx prisma migrate deploy",
+    "db:migrate": "npx prisma migrate deploy && npx prisma generate",
     "start": "next start",
     "lint": "next lint",
     "seed:hotspots": "node scripts/seed-institutional-hotspots.js"
