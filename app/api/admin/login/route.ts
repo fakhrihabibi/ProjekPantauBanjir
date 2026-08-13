@@ -34,8 +34,9 @@ export async function POST(request: Request) {
 
     const email = normalizeEmail(parsed.data.email);
 
-    // Debug helpers (opt-in): if caller sets header `x-debug: 1`, include non-secret booleans
-    const debugEnabled = typeof (request as any).headers !== 'undefined' &&
+    // Debug helpers only in local development.
+    const debugEnabled = process.env.NODE_ENV === 'development' &&
+      typeof (request as any).headers !== 'undefined' &&
       (request as any).headers.get && (request as any).headers.get('x-debug') === '1';
 
     const configuredEmail = process.env.ADMIN_USERNAME?.trim().toLowerCase();

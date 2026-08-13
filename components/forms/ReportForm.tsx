@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { reportFormSchema, ReportFormData } from '@/lib/schemas';
+import { reportFormSchema, ReportFormData, normalizeReportPayload } from '@/lib/schemas';
 import { submitFloodReport } from '@/app/actions';
 import { toast } from 'sonner';
 import { Upload, X, AlertCircle, CheckCircle, MapPin, Search, Loader2 } from 'lucide-react';
@@ -315,8 +315,17 @@ export function ReportForm() {
         }
       }
 
+      const payload = normalizeReportPayload(
+        { ...data, fotoUrl },
+        {
+          latitude: markerPos?.lat,
+          longitude: markerPos?.lng,
+          coordinateSource: 'manual_pin',
+        }
+      );
+
       // Submit the form with fotoUrl
-      const response = await submitFloodReport({ ...data, fotoUrl });
+      const response = await submitFloodReport(payload);
 
       if (response.success) {
         toast.success('✅ Laporan Berhasil Dikirim!', {

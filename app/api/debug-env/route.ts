@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentSession } from '@/lib/auth';
 
 // Ensure Node runtime so process.env is available
 export const runtime = 'nodejs';
@@ -11,6 +12,12 @@ function mask(value: string | undefined | null) {
 
 export async function GET(_request: NextRequest) {
   try {
+    const session = await getCurrentSession();
+
+    if (!session || session.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
     const s3Bucket = process.env.S3_BUCKET ?? null;
     const s3Endpoint = process.env.S3_ENDPOINT ?? process.env.S3Endpoint ?? null;
     const region = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? null;

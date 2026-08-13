@@ -85,6 +85,24 @@ export const reportFormSchema = z
 
 export type ReportFormData = z.infer<typeof reportFormSchema>;
 
+export function normalizeReportPayload(
+  data: Partial<ReportFormData>,
+  fallback?: Partial<Pick<ReportFormData, 'latitude' | 'longitude' | 'coordinateSource'>>
+): ReportFormData {
+  const latitude = data.latitude ?? fallback?.latitude ?? undefined;
+  const longitude = data.longitude ?? fallback?.longitude ?? undefined;
+
+  return {
+    ...data,
+    latitude: latitude === null ? undefined : latitude,
+    longitude: longitude === null ? undefined : longitude,
+    coordinateSource:
+      data.coordinateSource ??
+      fallback?.coordinateSource ??
+      (latitude !== undefined && longitude !== undefined ? 'manual_pin' : undefined),
+  } as ReportFormData;
+}
+
 export const loginSchema = z.object({
   email: z.string().email('Email tidak valid'),
   password: z.string().min(8, 'Password minimal 8 karakter'),

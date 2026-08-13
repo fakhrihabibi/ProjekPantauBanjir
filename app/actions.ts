@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { reportFormSchema, ReportFormData } from '@/lib/schemas';
+import { reportFormSchema, ReportFormData, normalizeReportPayload } from '@/lib/schemas';
 import { prisma } from '@/lib/prisma';
 import { getCurrentSession } from '@/lib/auth';
 import { isWithinBojongsoangBounds } from '@/lib/map-config';
@@ -18,8 +18,10 @@ export async function submitFloodReport(
   data: ReportFormData
 ): Promise<SubmitReportResponse> {
   try {
+    const normalizedData = normalizeReportPayload(data);
+
     // Validate data using zod schema
-    const validatedData = reportFormSchema.parse(data);
+    const validatedData = reportFormSchema.parse(normalizedData);
     const tingkatKeparahan = classifyFloodSeverityByHeight(validatedData.tinggiGenanganCm);
 
     if (!validatedData.fotoUrl?.trim()) {
